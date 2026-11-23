@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EOW - 登录</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:22px;background:linear-gradient(135deg,#6558e8,#3db9d3);font-family:Arial,"Microsoft YaHei",sans-serif}
+.card{width:100%;max-width:440px;background:#fff;padding:38px 32px;border-radius:24px;box-shadow:0 18px 55px #17245a35;text-align:center}
+.logo{font-size:36px;font-weight:800;color:#6259e8;letter-spacing:2px}
+h1{font-size:25px;color:#20243a;margin:12px 0}
+.sub{font-size:14px;color:#78809a;margin-bottom:25px}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:5px;background:#f0f2fa;border-radius:12px}
+.tab{border:0;background:transparent;color:#68718b;padding:11px;border-radius:9px;font-weight:700;cursor:pointer}
+.tab.active{background:#fff;color:#5d59e8;box-shadow:0 2px 9px #1c275014}
+label{display:block;text-align:left;margin:18px 0 8px;font-size:14px;font-weight:600;color:#343a52}
+input{width:100%;padding:14px;border:1px solid #dce1ef;border-radius:11px;font-size:15px}
+button.primary{width:100%;padding:15px;margin-top:24px;border:0;border-radius:11px;background:linear-gradient(100deg,#6258e8,#278fef);color:#fff;font-size:16px;font-weight:700;cursor:pointer}
+button:disabled{opacity:.6}
+#message{margin-top:15px;font-size:14px;line-height:1.6;overflow-wrap:anywhere}
+.links{margin-top:24px;font-size:14px;line-height:2.4;color:#78809a}
+a{color:#5d59e8;text-decoration:none}
+</style>
+</head>
+<body>
+<main class="card">
+  <div class="logo">EOW</div>
+  <h1>欢迎回来</h1>
+  <p class="sub">登录 EOW，连接彼此，分享生活。</p>
+  <div class="tabs">
+    <button class="tab active" id="emailTab" type="button">邮箱登录</button>
+    <button class="tab" id="phoneTab" type="button">手机号码登录</button>
+  </div>
+  <form id="loginForm">
+    <label id="identifierLabel" for="identifier">邮箱地址</label>
+    <input id="identifier" type="email" placeholder="请输入注册邮箱" autocomplete="username" required>
+    <label for="password">登录密码</label>
+    <input id="password" type="password" placeholder="请输入密码" autocomplete="current-password" required>
+    <button class="primary" id="loginButton" type="submit">登录 EOW 账号</button>
+  </form>
+  <p id="message" role="status" aria-live="polite"></p>
+  <div class="links">
+    还没有账号？<a href="register.html">立即注册</a><br>
+    <a href="index.html">返回 EOW 首页</a>
+  </div>
+</main>
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+const SUPABASE_URL = "https://tofnewhidtwkxxzlnyjj.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_SnsKud9va2jG7fOKZTS-_g_RdP0zmu1";
+const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+const $ = id => document.getElementById(id);
+let mode = "email";
+function setMode(next) {
+  mode = next;
+  $("emailTab").classList.toggle("active", mode === "email");
+  $("phoneTab").classList.toggle("active", mode === "phone");
+  $("identifierLabel").textContent = mode === "email" ? "邮箱地址" : "手机号码（国际格式）";
+  $("identifier").type = mode === "email" ? "email" : "tel";
+  $("identifier").placeholder = mode === "email" ? "请输入注册邮箱" : "例如 +60123456789";
+  $("identifier").autocomplete = mode === "email" ? "username" : "tel";
+  $("identifier").value = "";
+  $("message").textContent = "";
+}
+$("emailTab").addEventListener("click", () => setMode("email"));
+$("phoneTab").addEventListener("click", () => setMode("phone"));
+$("loginForm").addEventListener("submit", async event => {
+  event.preventDefault();
+  const identifier = $("identifier").value.trim();
+  const password = $("password").value;
+  const button = $("loginButton"), message = $("message");
+  button.disabled = true;
+  button.textContent = "正在登录...";
+  message.style.color = "#68718b";
+  message.textContent = "正在验证账号...";
+  try {
+    let credentials;
+    if (mode === "email") credentials = { email: identifier, password };
+    else {
+      const phone = identifier.replace(/[\s()-]/g, "");
+      if (!/^\+[1-9]\d{7,14}$/.test(phone)) throw new Error("手机号格式不正确，请使用国际格式，例如 +60123456789。");
+      credentials = { phone, password };
+    }
+    const { error } = await supabase.auth.signInWithPassword(credentials);
+    if (error) throw error;
+    message.style.color = "#16834a";
+    message.textContent = "登录成功！正在进入 EOW...";
+    window.location.href = "feed.html";
+  } catch (error) {
+    message.style.color = "#d33";
+    message.textContent = "登录失败：" + (error.message || "请检查账号和密码");
+  } finally {
+    button.disabled = false;
+    button.textContent = "登录 EOW 账号";
+  }
+});
+</script>
+</body>
+</html>

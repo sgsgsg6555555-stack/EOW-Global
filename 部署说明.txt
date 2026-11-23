@@ -1,0 +1,36 @@
+EOW 项目检查与修复版部署说明
+================================
+
+本包保留原 EOW 网站结构，并包含：
+- 原网站页面与样式
+- EOW 管理后台（用户、动态、蓝 V、举报、礼物、订单、设置、日志）
+- 钱包与礼物商城
+- 个人主页蓝 V 展示与封面背景上传
+- EOW.sql：原基础数据库升级脚本
+- EOW_后台功能升级.sql：后台/蓝 V/钱包/礼物/充值订单等扩展数据库脚本
+- EOW_礼物账本修复.sql：仅修复礼物赠送双方余额、流水和通知的独立补丁
+
+重要：当前 ZIP 的 JavaScript 已通过 Node.js 语法检查；这不等于已经连接线上 Supabase 完成端到端验证。
+
+如果你此前已经在 Supabase 执行过后台扩展 SQL，且 eow_admins、eow_wallets、eow_gifts 等表都已存在：
+1. 不要重新执行 EOW.sql 或 EOW_后台功能升级.sql。
+2. 只需在 Supabase SQL Editor 执行 EOW_礼物账本修复.sql。
+3. 运行成功后，确认你的超级管理员记录仍在 public.eow_admins 中。
+
+如果此前没有执行过扩展 SQL：
+1. 先在 Supabase 创建数据库备份。
+2. 先执行 EOW.sql（仅当原基础升级尚未执行）。
+3. 再执行 EOW_后台功能升级.sql。
+4. 确认 public.eow_admins 中已有自己的用户 UUID，role 为 super_admin，active 为 true。
+
+Netlify 部署：
+1. 解压 ZIP。
+2. 打开解压后的 EOW-deploy 文件夹。
+3. 将该文件夹内的所有文件部署到 Netlify 站点发布根目录（不是把 ZIP 文件本身上传到网页）。
+4. 保留 config.js 中当前 Supabase URL 与 Publishable Key；不要把 service_role key 放入浏览器端。
+5. 登录 EOW，打开 admin.html 检查管理后台。
+
+中国大陆充值说明：
+- 钱包和充值订单管理界面已准备，但微信支付/支付宝真实支付尚未接通。
+- 正式收款必须接入有资质的支付商户与服务端/Edge Function 回调，并校验支付签名后才能给钱包入账。
+- 不能在浏览器端直接把订单状态改为 paid，也不能把 Supabase service_role 密钥放进前端。

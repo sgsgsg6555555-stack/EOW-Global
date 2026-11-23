@@ -1,0 +1,67 @@
+﻿
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EOW - 社区详情</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="header"></div>
+
+<div class="layout">
+  <aside class="side" id="sideNav"></aside>
+
+  <main class="content">
+
+    <section class="panel">
+      <a href="communities.html" class="btn secondary small">
+        ← 返回社区
+      </a>
+
+      <h1 id="communityName">正在加载社区...</h1>
+      <p id="communityDescription" class="muted"></p>
+
+      <div id="communityMeta" class="muted"></div>
+    </section>
+
+    <section class="panel">
+      <h2 class="section-title">社区动态</h2>
+
+      <form id="communityPostForm">
+        <textarea
+          id="communityPostText"
+          class="field"
+          placeholder="分享你在社区的想法..."
+          rows="4"
+          maxlength="5000"
+          required
+        ></textarea>
+
+        <button class="btn" type="submit">
+          发布动态
+        </button>
+      </form>
+
+      <div id="communityPostNotice"></div>
+    </section>
+
+    <section class="panel">
+      <h2 class="section-title">成员与动态</h2>
+      <div id="communityMembers"></div>
+      <div id="communityPosts"></div>
+      <div id="communityStatus" class="status">
+        正在加载...
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script type="module" src="community-detail.js?v=3"></script>
+
+</body>
+</html>
+
