@@ -3,7 +3,7 @@
 if (window.__eowRegisterHandlerInstalled) throw new Error("EOW register handler already installed");
 window.__eowRegisterHandlerInstalled = true;
 let inFlight = false;
-const isRateLimited = error => Number(error?.status ?? error?.code) === 429 || /rate limit|too many|棰戠箒/i.test(error?.message || "");
+const isRateLimited = error => Number(error?.status ?? error?.code) === 429 || /rate limit|too many|频繁/i.test(error?.message || "");
 
 $("#registerForm").onsubmit = async e => {
   e.preventDefault();
@@ -25,6 +25,6 @@ $("#registerForm").onsubmit = async e => {
   } finally {
     inFlight = false;
     btn.disabled = false;
-    btn.textContent = "鍒涘缓 EOW 璐﹀彿";
+    btn.textContent = "创建 EOW 账号";
   }
 };

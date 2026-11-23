@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EOW - 鍒涘缓璐﹀彿</title>
+<title>EOW - 创建账号</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:22px;font-family:Arial,"Microsoft YaHei",sans-serif;background:linear-gradient(135deg,#6558e8 0%,#3db9d3 100%)}
@@ -30,47 +30,47 @@ a{color:#5d59e8;text-decoration:none}
 <body>
 <main class="card">
   <div class="logo">EOW</div>
-  <h1>鍒涘缓浣犵殑璐﹀彿</h1>
-  <p class="sub">鍔犲叆 EOW锛岃繛鎺ュ郊姝わ紝鍒嗕韩鐢熸椿銆?/p>
+  <h1>创建你的账号</h1>
+  <p class="sub">加入 EOW，连接彼此，分享生活。</p>
 
-  <div class="tabs" role="tablist" aria-label="娉ㄥ唽鏂瑰紡">
-    <button class="tab active" id="emailTab" type="button">閭娉ㄥ唽</button>
-    <button class="tab" id="phoneTab" type="button">鎵嬫満鍙风爜娉ㄥ唽</button>
+  <div class="tabs" role="tablist" aria-label="注册方式">
+    <button class="tab active" id="emailTab" type="button">邮箱注册</button>
+    <button class="tab" id="phoneTab" type="button">手机号码注册</button>
   </div>
 
   <form id="registerForm">
     <section id="emailFields">
-      <label for="email">閭鍦板潃</label>
+      <label for="email">邮箱地址</label>
       <input type="email" id="email" placeholder="请输入你的邮箱" autocomplete="email">
     </section>
 
     <section id="phoneFields" class="hidden">
-      <label for="phone">鎵嬫満鍙风爜锛堝浗闄呮牸寮忥級</label>
+      <label for="phone">手机号码（国际格式）</label>
       <input type="tel" id="phone" placeholder="+60123456789" autocomplete="tel" inputmode="tel">
-      <p class="hint">璇峰寘鍚浗瀹?鍦板尯浠ｇ爜锛屼緥濡傞┈鏉ヨタ浜?+60銆佷腑鍥?+86銆備笉瑕佽緭鍏ョ┖鏍兼垨鏈湴鍙风爜鍓嶉潰鐨?0銆?/p>
+      <p class="hint">请包含国家/地区代码，例如马来西亚 +60、中国 +86。不要输入空格或本地号码前面的 0。</p>
     </section>
 
-    <label for="password">璁剧疆瀵嗙爜</label>
+    <label for="password">设置密码</label>
     <input type="password" id="password" placeholder="至少输入 8 个字符" minlength="8" autocomplete="new-password" required>
 
-    <label for="confirmPassword">纭瀵嗙爜</label>
+    <label for="confirmPassword">确认密码</label>
     <input type="password" id="confirmPassword" placeholder="请再次输入密码" minlength="8" autocomplete="new-password" required>
 
-    <button class="primary" type="submit" id="registerButton">鍒涘缓 EOW 璐﹀彿</button>
+    <button class="primary" type="submit" id="registerButton">创建 EOW 账号</button>
   </form>
 
   <section id="otpSection" class="hidden">
-    <div class="otp-note">楠岃瘉鐮佸凡璇锋眰鍙戦€佸埌浣犵殑鎵嬫満銆傝濉啓鐭俊涓殑 6 浣嶉獙璇佺爜瀹屾垚楠岃瘉銆?/div>
-    <label for="otp">鐭俊楠岃瘉鐮?/label>
-    <input id="otp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="杈撳叆 6 浣嶉獙璇佺爜">
-    <button class="primary" type="button" id="verifyButton">楠岃瘉鎵嬫満鍙峰苟瀹屾垚娉ㄥ唽</button>
-    <button class="tab" type="button" id="resendButton" style="width:100%;margin-top:8px">閲嶆柊鍙戦€侀獙璇佺爜</button>
+    <div class="otp-note">验证码已请求发送到你的手机。请填写短信中的 6 位验证码完成验证。</div>
+    <label for="otp">短信验证码</label>
+    <input id="otp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="输入 6 位验证码">
+    <button class="primary" type="button" id="verifyButton">验证手机号并完成注册</button>
+    <button class="tab" type="button" id="resendButton" style="width:100%;margin-top:8px">重新发送验证码</button>
   </section>
 
   <p id="message" role="status" aria-live="polite"></p>
   <div class="back">
-    宸茬粡鏈夎处鍙凤紵<a href="login.html">绔嬪嵆鐧诲綍</a><br>
-    <a href="index.html">杩斿洖 EOW 棣栭〉</a>
+    已经有账号？<a href="login.html">立即登录</a><br>
+    <a href="index.html">返回 EOW 首页</a>
   </div>
 </main>
 
@@ -86,7 +86,7 @@ const form = $("registerForm"), message = $("message");
 if (window.__eowRegisterHandlerInstalled) throw new Error("EOW register handler already installed");
 window.__eowRegisterHandlerInstalled = true;
 let inFlight = false;
-function isRateLimited(error) { const status = error?.status ?? error?.code; const text = String(error?.message || "").toLowerCase(); return Number(status) === 429 || text.includes("rate limit") || text.includes("too many") || text.includes("棰戠箒"); }
+function isRateLimited(error) { const status = error?.status ?? error?.code; const text = String(error?.message || "").toLowerCase(); return Number(status) === 429 || text.includes("rate limit") || text.includes("too many") || text.includes("频繁"); }
 let mode = "email";
 let pendingPhone = "";
 
@@ -122,7 +122,7 @@ async function requestPhoneOtp(phone, password) {
   pendingPhone = phone;
 
   if (data.session) {
-    showMessage("娉ㄥ唽鎴愬姛锛佹鍦ㄨ繘鍏?EOW...", "#16834a");
+    showMessage("注册成功，正在进入 EOW...", "#16834a");
     window.location.href = "feed.html";
     return;
   }
@@ -141,7 +141,7 @@ form.addEventListener("submit", async event => {
   const button = $("registerButton");
   inFlight = true;
   button.disabled = true;
-  button.textContent = mode === "phone" ? "姝ｅ湪鍙戦€侀獙璇佺爜..." : "姝ｅ湪鍒涘缓璐﹀彿...";
+  button.textContent = mode === "phone" ? "正在发送验证码..." : "正在创建账号...";
   try {
     if (mode === "email") {
       const email = $("email").value.trim();
@@ -151,7 +151,7 @@ form.addEventListener("submit", async event => {
       });
       if (error) throw error;
       if (data.session) {
-        showMessage("娉ㄥ唽鎴愬姛锛佹鍦ㄨ繘鍏?EOW...", "#16834a");
+        showMessage("注册成功，正在进入 EOW...", "#16834a");
         window.location.href = "feed.html";
       } else {
         showMessage("注册申请已提交，请检查邮箱并点击验证链接完成注册。", "#16834a");
@@ -168,7 +168,7 @@ form.addEventListener("submit", async event => {
   } finally {
     inFlight = false;
     button.disabled = false;
-    button.textContent = "鍒涘缓 EOW 璐﹀彿";
+    button.textContent = "创建 EOW 账号";
   }
 });
 
@@ -185,13 +185,13 @@ $("verifyButton").addEventListener("click", async () => {
       type: "sms"
     });
     if (error) throw error;
-    showMessage("鎵嬫満鍙烽獙璇佹垚鍔燂紒姝ｅ湪杩涘叆 EOW...", "#16834a");
+    showMessage("手机号验证成功！正在进入 EOW...", "#16834a");
     window.location.href = "feed.html";
   } catch (error) {
     showMessage("验证失败：" + (error.message || "验证码无效或已过期"));
   } finally {
     button.disabled = false;
-    button.textContent = "楠岃瘉鎵嬫満鍙峰苟瀹屾垚娉ㄥ唽";
+    button.textContent = "验证手机号并完成注册";
   }
 });
 
