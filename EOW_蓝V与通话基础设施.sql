@@ -73,7 +73,7 @@ as $$
 declare
   v_user_id uuid;
 begin
-  if auth.uid() is null or not coalesce(public.eow_is_admin(), false) then
+  if auth.uid() is null or not coalesce(public.is_eow_admin(), false) then
     raise exception 'Administrator permission required';
   end if;
   if p_status not in ('approved', 'rejected') then
