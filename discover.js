@@ -1,4 +1,4 @@
-import {supabase,$,initShell,avatarHTML,displayName,esc} from "./shared.js?v=6";
+import {supabase,$,initShell,avatarHTML,displayName,esc} from "./shared.js?v=8";
 const shell=await initShell("discover");
 if(shell){
  let users=[],relations=[],following=new Set(),myProfile={};
@@ -11,10 +11,10 @@ if(shell){
    supabase.from("follows").select("following_id").eq("follower_id",shell.user.id),
    supabase.from("profiles").select("country_code,preferred_language,interests").eq("id",shell.user.id).maybeSingle()
   ]);
-  if(u.error){$("#status").textContent="读取用户失败："+u.error.message;return;}
+  if(u.error && /country_code|preferred_language|interests|column/i.test(u.error.message||"")){const fallback=await supabase.from("profiles").select("id,username,display_name,avatar_url,bio,created_at").neq("id",shell.user.id).order("created_at",{ascending:false}).limit(150);u.data=fallback.data;u.error=fallback.error;}if(u.error){$("#status").textContent="读取用户失败："+u.error.message;return;}
   if(r.error){$("#status").textContent="好友关系读取失败："+r.error.message;return;}
   if(f.error){$("#status").textContent="关注关系读取失败："+f.error.message;return;}
-  users=u.data||[];relations=r.data||[];following=new Set((f.data||[]).map(x=>x.following_id));myProfile=me.data||{};render();
+  users=u.data||[];relations=r.data||[];following=new Set((f.data||[]).map(x=>x.following_id));myProfile=me.data||{};if(me.error)myProfile={};render();
  }
  function relationFor(id){return relations.find(x=>(x.requester_id===shell.user.id&&x.addressee_id===id)||(x.requester_id===id&&x.addressee_id===shell.user.id));}
  function actionMarkup(u){
