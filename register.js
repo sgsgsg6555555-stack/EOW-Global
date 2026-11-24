@@ -1,5 +1,16 @@
 import { supabase, $, setNotice } from "./shared.js?v=6";
 
+const inviteCode = new URLSearchParams(location.search).get("invite") || localStorage.getItem("eow_pending_invite") || "";
+if (inviteCode) localStorage.setItem("eow_pending_invite", inviteCode.slice(0, 40));
+async function attributeInvite(user) {
+  const code = localStorage.getItem("eow_pending_invite");
+  if (!code || !user?.id) return;
+  const { data: inviter, error: lookupError } = await supabase.from("profiles").select("id").eq("invite_code", code).maybeSingle();
+  if (lookupError || !inviter || inviter.id === user.id) return;
+  const { error } = await supabase.from("eow_invites").insert({ inviter_id: inviter.id, invitee_id: user.id, invite_code: code });
+  if (!error || error.code === "23505") localStorage.removeItem("eow_pending_invite");
+}
+
 const form = $("#registerForm");
 let mode = "email";
 let pendingPhone = "";
@@ -54,6 +65,7 @@ form.addEventListener("submit", async event => {
       const { data, error } = await supabase.auth.signUp({ email, password });
       if (error) throw error;
       if (data.session) {
+        await attributeInvite(data.user);
         showMessage("注册成功，正在进入 EOW…", "success");
         location.replace("feed.html");
       } else {
@@ -77,6 +89,7 @@ form.addEventListener("submit", async event => {
       });
       if (error) throw error;
       if (data.session) {
+        await attributeInvite(data.user);
         showMessage("注册成功，正在进入 EOW…", "success");
         location.replace("feed.html");
       } else {
@@ -105,6 +118,7 @@ $("#verifyButton").addEventListener("click", async () => {
       ? await supabase.auth.verifyOtp({ email: pendingEmail, token, type: "signup" })
       : await supabase.auth.verifyOtp({ phone: pendingPhone, token, type: "sms" });
     if (response.error) throw response.error;
+    await attributeInvite(response.data.user);
     showMessage("验证成功，正在进入 EOW…", "success");
     location.replace("feed.html");
   } catch (error) {
