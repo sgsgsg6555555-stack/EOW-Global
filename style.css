@@ -291,6 +291,7 @@ body.eow-feed-page{--eow-bg:#050d1e;--eow-panel:#0b1830;--eow-panel2:#101f3b;--e
 
 
 /* Mobile-first EOW shell: safe-area, compact header and fixed five-item navigation */
+.mobile-page-back,.mobile-chat-back{display:none}
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%;scroll-padding-top:76px}
 img,video,iframe{max-width:100%}
 @media(max-width:700px){
