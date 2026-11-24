@@ -20,7 +20,7 @@ export async function renderPollCard(postId,userId){
   ]);
   const rows=options||[], allVotes=votes||[], myVote=allVotes.find(v=>v.user_id===userId);
   const total=allVotes.length, closed=poll.closes_at&&new Date(poll.closes_at)<=new Date();
-  return `<section class="eow-poll" data-poll="${esc(poll.id)}"><div class="eow-poll-title">${t("投票","Poll")} · <span>${total} ${t("票","votes")}</span></div>${rows.map(o=>{const count=allVotes.filter(v=>v.option_id===o.id).length,pct=total?Math.round(count/total*100):0;return `<button class="eow-poll-option ${myVote?.option_id===o.id?"selected":""}" data-vote-option="${esc(o.id)}" ${myVote||closed?"disabled":""}><span>${esc(o.option_text)}</span><b>${pct}% · ${count}</b><i style="width:${pct}%"></i></button>`;}).join("")}<small>${myVote?t("你已投票","You voted"):closed?t("投票已结束","Poll closed"):t("选择一个选项投票","Choose an option to vote")}</small></section>`;
+  return `<section class="eow-poll" data-poll="${esc(poll.id)}"><div class="eow-poll-title">${t("投票","Poll")} · <span>${total} ${t("票","votes")}</span></div>${rows.map(o=>{const count=allVotes.filter(v=>v.option_id===o.id).length,pct=total?Math.round(count/total*100):0;return `<button class="eow-poll-option ${myVote?.option_id===o.id?"selected":""}" data-action="vote" data-vote-option="${esc(o.id)}" ${myVote||closed?"disabled":""}><span>${esc(o.option_text)}</span><b>${pct}% · ${count}</b><i style="width:${pct}%"></i></button>`;}).join("")}<small>${myVote?t("你已投票","You voted"):closed?t("投票已结束","Poll closed"):t("选择一个选项投票","Choose an option to vote")}</small></section>`;
 }
 
 export async function initSocialExtras(shell){
