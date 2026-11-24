@@ -1,4 +1,4 @@
-﻿import {supabase,$,initShell,shellHeader,avatarHTML,displayName,getProfiles,postCard,setNotice,esc} from "./shared.js?v=4";
+﻿import {supabase,$,initShell,shellHeader,avatarHTML,displayName,getProfiles,postCard,setNotice,esc} from "./shared.js?v=8";
 const shell=await initShell("profile");if(shell){const targetId=new URLSearchParams(location.search).get("id")||shell.user.id;const own=targetId===shell.user.id;
 async function load(){const {data:p,error}=await supabase.from("profiles").select("*").eq("id",targetId).maybeSingle();if(error||!p){$("#profileHead").innerHTML=`<section class="panel">无法读取用户资料：${error?.message||"用户不存在"}</section>`;return;}
 const [postsRes,followersRes,followingRes]=await Promise.all([supabase.from("posts").select("*").eq("user_id",targetId).order("created_at",{ascending:false}).limit(30),supabase.from("follows").select("follower_id",{count:"exact",head:true}).eq("following_id",targetId),supabase.from("follows").select("following_id",{count:"exact",head:true}).eq("follower_id",targetId)]);
