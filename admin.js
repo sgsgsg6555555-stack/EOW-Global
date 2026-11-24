@@ -106,7 +106,7 @@ async function start(){
  if(userError||!user){location.href="login.html?next="+encodeURIComponent("/admin.html");return;}
  const {data:admin,error:adminError}=await supabase.from("eow_admins").select("user_id,role").eq("user_id",user.id).maybeSingle();
  if(adminError||!admin){status.textContent="当前账号没有管理员权限。请项目所有者核对 eow_admins 中的管理员记录。";status.classList.add("admin-error");return;}
- status.textContent=`管理员身份已验证：${admin.role} · 当前为安全只读模式`;
+ status.textContent=`管理员身份已验证：${admin.role} · 当前可查看用户详情并审核蓝 V 申请`;
  app.hidden=false;
  await Promise.all([loadStats(),loadUsers()]);
  $("#usersBody").addEventListener("click",e=>{const b=e.target.closest("[data-user-detail]");if(b)showUserDetail(b.dataset.userDetail);});
