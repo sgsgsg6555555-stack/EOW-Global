@@ -109,12 +109,12 @@ export async function initCallUI(user, supabase) {
   const startCall=async(peerId,type="audio")=>{
     if(current)throw new Error("当前已有通话");
     if(!peerId||peerId===user.id)throw new Error("通话对象无效");
-    show(type==="video"?"视频通话":"语音通话","正在申请麦克风/摄像头权限…");
+    show(type==="video"?"视频通话":"语音通话","正在验证好友关系…");
     try{
-      await ensureMedia(type);
       const {data:callId,error}=await supabase.rpc("eow_start_call",{p_callee_id:peerId,p_call_type:type});
       if(error)throw error;
       current={id:callId,peerId,type,role:"caller"};
+      await ensureMedia(type);
       setStatus("正在呼叫对方…");
       await subscribeCall(callId);
       pc=createPeer();
