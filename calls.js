@@ -29,14 +29,14 @@ export async function initCallUI(user, supabase) {
     <audio id="eowRemoteAudio" autoplay></audio>
     <div class="eow-call-actions">
       <button id="eowAcceptCall">接听</button><button id="eowRejectCall" class="secondary">拒绝</button>
-      <button id="eowMuteCall" class="secondary" hidden>静音</button><button id="eowCameraCall" class="secondary" hidden>关闭摄像头</button>
+      <button id="eowMuteCall" class="secondary" hidden>静音</button><button id="eowCameraCall" class="secondary" hidden>关闭摄像头</button><button id="eowSwitchCamera" class="secondary" hidden>切换摄像头</button>
       <button id="eowEndCall" class="danger" hidden>挂断</button>
     </div>
   </section>`;
   document.body.append(root);
   const $=id=>root.querySelector("#"+id);
   const status=$("eowCallStatus"),remoteVideo=$("eowRemoteVideo"),localVideo=$("eowLocalVideo"),remoteAudio=$("eowRemoteAudio");
-  let current=null,channel=null,pc=null,localStream=null,remoteStream=null,remoteCandidates=[],ringTimer=null,muted=false,cameraOff=false;
+  let current=null,channel=null,pc=null,localStream=null,remoteStream=null,remoteCandidates=[],ringTimer=null,muted=false,cameraOff=false,cameraFacing="user";
   const setStatus=t=>{status.textContent=t;};
   const show=(title,message)=>{root.hidden=false;$("eowCallTitle").textContent=title;setStatus(message);};
   const send=async(event,payload={})=>{
@@ -48,20 +48,20 @@ export async function initCallUI(user, supabase) {
     if(pc){pc.ontrack=null;pc.onicecandidate=null;pc.onconnectionstatechange=null;pc.close();pc=null;}
     if(localStream){localStream.getTracks().forEach(t=>t.stop());localStream=null;}
     remoteStream=null;remoteCandidates=[];remoteVideo.srcObject=null;remoteAudio.srcObject=null;localVideo.srcObject=null;remoteVideo.hidden=false;localVideo.hidden=false;
-    muted=false;cameraOff=false;$("eowMuteCall").textContent="静音";$("eowCameraCall").textContent="关闭摄像头";
+    muted=false;cameraOff=false;cameraFacing="user";$("eowMuteCall").textContent="静音";$("eowCameraCall").textContent="关闭摄像头";
   };
   const cleanup=async()=>{
     if(ringTimer)clearTimeout(ringTimer);ringTimer=null;
     if(channel){const old=channel;channel=null;await supabase.removeChannel(old);}
     closeMedia();current=null;root.hidden=true;
     $("eowAcceptCall").hidden=false;$("eowRejectCall").hidden=false;
-    $("eowMuteCall").hidden=true;$("eowCameraCall").hidden=true;$("eowEndCall").hidden=true;
+    $("eowMuteCall").hidden=true;$("eowCameraCall").hidden=true;$("eowSwitchCamera").hidden=true;$("eowEndCall").hidden=true;
   };
   const ensureMedia=async(type)=>{
     if(!navigator.mediaDevices?.getUserMedia)throw new Error("当前浏览器不支持音视频通话，请使用 HTTPS 页面和较新的浏览器");
     localStream=await navigator.mediaDevices.getUserMedia({audio:true,video:type==="video"});
     localVideo.srcObject=localStream;localVideo.hidden=type!=="video";remoteVideo.hidden=type!=="video";
-    $("eowMuteCall").hidden=false;$("eowCameraCall").hidden=type!=="video";$("eowEndCall").hidden=false;
+    $("eowMuteCall").hidden=false;$("eowCameraCall").hidden=type!=="video";$("eowSwitchCamera").hidden=type!=="video";$("eowEndCall").hidden=false;
     $("eowAcceptCall").hidden=true;$("eowRejectCall").hidden=true;
   };
   const createPeer=()=>{
@@ -150,6 +150,7 @@ export async function initCallUI(user, supabase) {
   $("eowAcceptCall").onclick=acceptCall;$("eowRejectCall").onclick=rejectCall;$("eowEndCall").onclick=endCall;
   $("eowMuteCall").onclick=()=>{muted=!muted;for(const t of localStream?.getAudioTracks()||[])t.enabled=!muted;$("eowMuteCall").textContent=muted?"取消静音":"静音";};
   $("eowCameraCall").onclick=()=>{cameraOff=!cameraOff;for(const t of localStream?.getVideoTracks()||[])t.enabled=!cameraOff;$("eowCameraCall").textContent=cameraOff?"开启摄像头":"关闭摄像头";};
+  $("eowSwitchCamera").onclick=async()=>{try{const nextFacing=cameraFacing==="user"?"environment":"user";const next=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:nextFacing}},audio:false});const track=next.getVideoTracks()[0];const sender=pc?.getSenders().find(s=>s.track?.kind==="video");if(!track||!sender)throw new Error("当前通话无法切换摄像头");await sender.replaceTrack(track);const old=localStream.getVideoTracks()[0];if(old){localStream.removeTrack(old);old.stop();}localStream.addTrack(track);localVideo.srcObject=localStream;cameraFacing=nextFacing;cameraOff=false;$("eowCameraCall").textContent="关闭摄像头";}catch(err){setStatus("切换摄像头失败："+err.message);}};
 
   const incoming=async(call)=>{
     if(current||call.caller_id===user.id)return;
@@ -158,7 +159,7 @@ export async function initCallUI(user, supabase) {
       await subscribeCall(call.id);
       show(call.call_type==="video"?"视频来电":"语音来电","好友来电 · "+(call.call_type==="video"?"视频通话":"语音通话"));
       $("eowAcceptCall").hidden=false;$("eowRejectCall").hidden=false;
-      $("eowMuteCall").hidden=true;$("eowCameraCall").hidden=true;$("eowEndCall").hidden=true;
+      $("eowMuteCall").hidden=true;$("eowCameraCall").hidden=true;$("eowSwitchCamera").hidden=true;$("eowEndCall").hidden=true;
       ringTimer=setTimeout(async()=>{if(current?.id===call.id){try{await supabase.rpc("eow_expire_incoming_calls");}catch{}await cleanup();}},45000);
     }catch(err){setStatus("无法接收来电："+err.message);await cleanup();}
   };
