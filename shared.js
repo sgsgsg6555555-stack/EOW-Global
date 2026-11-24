@@ -32,7 +32,46 @@ export async function trackActivity(eventType){
   if(error)console.warn("EOW activity tracking unavailable:",error.message);
  }catch(error){console.warn("EOW activity tracking skipped:",error?.message||error);}
 }
-export async function initShell(active="home"){const user=await requireUser();if(!user)return null;const header=$("#header");if(header && !header.innerHTML)header.innerHTML=shellHeader();let profile;try{profile=await ensureProfile(user);}catch(e){console.error(e);profile={display_name:user.email};}const side=$("#sideNav");if(side)side.innerHTML=navMarkup(active,profile);const userChip=$("#userChip");if(userChip)userChip.innerHTML=`${avatarHTML(profile)}<span>${esc(displayName(profile))} ${verifiedBadgeHTML(profile)}</span>`;$("#logoutLink")?.addEventListener("click",async e=>{e.preventDefault();await signOut();});$("#globalSearch")?.addEventListener("keydown",e=>{if(e.key==="Enter"){location.href="discover.html?q="+encodeURIComponent(e.target.value.trim());}});try{const {data:admin}=await supabase.from("eow_admins").select("user_id").eq("user_id",user.id).maybeSingle();if(admin&&side&&!side.querySelector(`a[href="admin.html"]`))side.insertAdjacentHTML("beforeend",`<a class="navlink" href="admin.html"><span class="navicon">⚙</span>管理后台</a>`);}catch(e){console.warn("管理员入口暂不可用",e);}trackActivity("page_view");return {user,profile};}
+
+function initMessageAlerts(user){
+ if(!user||window.__eowMessageAlerts===user.id)return;
+ window.__eowMessageAlerts=user.id;
+ let box=document.getElementById("eowMessageToasts");
+ if(!box){box=document.createElement("div");box.id="eowMessageToasts";box.className="eow-message-toasts";box.setAttribute("aria-live","polite");document.body.append(box);}
+ const renderCount=count=>{
+  const link=document.querySelector('#sideNav a[href="messages.html"]');if(!link)return;
+  let badge=link.querySelector(".eow-unread-badge");
+  if(count>0){if(!badge){badge=document.createElement("span");badge.className="eow-unread-badge";link.append(badge);}badge.textContent=count>99?"99+":String(count);}
+  else badge?.remove();
+ };
+ const refresh=async()=>{
+  const {count,error}=await supabase.from("messages").select("id",{count:"exact",head:true}).eq("receiver_id",user.id).is("read_at",null);
+  if(!error)renderCount(count||0);
+ };
+ const show=async message=>{
+  const profiles=await getProfiles([message.sender_id]).catch(()=>({}));
+  const profile=profiles[message.sender_id]||{};
+  const toast=document.createElement("div");toast.className="eow-message-toast";toast.dataset.href="messages.html?user="+encodeURIComponent(message.sender_id);
+  toast.innerHTML=avatarHTML(profile,"avatar")+"<div class='eow-message-toast-copy'><strong>"+esc(displayName(profile))+"</strong><p>"+esc(message.content||"新消息")+"</p><small>"+(document.documentElement.lang==="en"?"New message":"发来一条新消息")+"</small></div><button type='button' class='eow-message-toast-close' aria-label='Close'>×</button>";
+  toast.addEventListener("click",event=>{if(event.target.closest(".eow-message-toast-close")){toast.remove();return;}location.href=toast.dataset.href;});
+  box.prepend(toast);while(box.children.length>4)box.lastElementChild.remove();
+  setTimeout(()=>toast.remove(),9000);
+ };
+ refresh();
+ const channel=supabase.channel("eow-global-message-alerts-"+user.id)
+  .on("postgres_changes",{event:"INSERT",schema:"public",table:"messages",filter:"receiver_id=eq."+user.id},async payload=>{
+   const m=payload.new;if(!m||m.sender_id===user.id)return;
+   const isOpenChat=location.pathname.endsWith("messages.html")&&window.EOW_ACTIVE_CHAT_ID===m.sender_id&&document.visibilityState==="visible";
+   if(!isOpenChat)await show(m);
+   refresh();
+  })
+  .on("postgres_changes",{event:"UPDATE",schema:"public",table:"messages",filter:"receiver_id=eq."+user.id},refresh)
+  .subscribe();
+ window.addEventListener("focus",refresh);
+ window.addEventListener("beforeunload",()=>supabase.removeChannel(channel),{once:true});
+}
+
+export async function initShell(active="home"){const user=await requireUser();if(!user)return null;const header=$("#header");if(header && !header.innerHTML)header.innerHTML=shellHeader();let profile;try{profile=await ensureProfile(user);}catch(e){console.error(e);profile={display_name:user.email};}const side=$("#sideNav");if(side)side.innerHTML=navMarkup(active,profile);initMessageAlerts(user);const userChip=$("#userChip");if(userChip)userChip.innerHTML=`${avatarHTML(profile)}<span>${esc(displayName(profile))} ${verifiedBadgeHTML(profile)}</span>`;$("#logoutLink")?.addEventListener("click",async e=>{e.preventDefault();await signOut();});$("#globalSearch")?.addEventListener("keydown",e=>{if(e.key==="Enter"){location.href="discover.html?q="+encodeURIComponent(e.target.value.trim());}});try{const {data:admin}=await supabase.from("eow_admins").select("user_id").eq("user_id",user.id).maybeSingle();if(admin&&side&&!side.querySelector(`a[href="admin.html"]`))side.insertAdjacentHTML("beforeend",`<a class="navlink" href="admin.html"><span class="navicon">⚙</span>管理后台</a>`);}catch(e){console.warn("管理员入口暂不可用",e);}trackActivity("page_view");return {user,profile};}
 export function shellHeader(){const feedNav=document.body.classList.contains("eow-feed-page")?`<nav class="eow-global-nav" aria-label="Primary navigation"><a href="feed.html" class="active">⌂ <span data-i18n="navHome">首页</span></a><a href="discover.html">⌕ <span data-i18n="navExplore">发现</span></a><a href="communities.html">♧ <span data-i18n="navCommunities">社区</span></a><a href="notifications.html">◉ <span data-i18n="navNotifications">通知</span></a><a href="messages.html">✉ <span data-i18n="navMessages">私信</span></a><div class="eow-language"><button type="button" data-lang="zh">中文</button><span>/</span><button type="button" data-lang="en">EN</button></div></nav>`:"";return `<header class="topbar"><a class="brand" href="feed.html">EOW</a>${feedNav}<div class="searchbox"><span>⌕</span><input id="globalSearch" placeholder="搜索用户、内容或社区…" aria-label="全站搜索"></div><div class="top-actions"><a class="btn ghost small hide-mobile" href="notifications.html">通知</a><a id="userChip" class="suggestion" href="profile.html"></a></div></header>`;}
 export function relativeTime(value){const date=new Date(value||Date.now());const seconds=Math.max(0,Math.floor((Date.now()-date.getTime())/1000));const en=document.documentElement.lang==="en";if(seconds<60)return en?"Just now":"刚刚";if(seconds<3600)return en?Math.floor(seconds/60)+"m ago":Math.floor(seconds/60)+" 分钟前";if(seconds<86400)return en?Math.floor(seconds/3600)+"h ago":Math.floor(seconds/3600)+" 小时前";if(seconds<604800)return en?Math.floor(seconds/86400)+"d ago":Math.floor(seconds/86400)+" 天前";return date.toLocaleDateString(en?"en-US":"zh-CN",{month:"short",day:"numeric"});}
 export function postCard(post, author, liked=false, comments=[], currentUserId=null, stats={}){
