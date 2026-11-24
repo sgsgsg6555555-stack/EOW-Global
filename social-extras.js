@@ -33,7 +33,7 @@ export async function initSocialExtras(shell){
  const modal=document.createElement("div");modal.className="eow-modal-backdrop";modal.hidden=true;modal.innerHTML='<div class="eow-modal" role="dialog" aria-modal="true"><button class="eow-modal-close" type="button" aria-label="Close">×</button><div class="eow-modal-content"></div></div>';document.body.append(modal);
  const close=()=>{modal.hidden=true;modal.querySelector(".eow-modal-content").replaceChildren();};
  modal.addEventListener("click",e=>{if(e.target===modal||e.target.closest(".eow-modal-close"))close();});
- const show=(title,body)=>{modal.querySelector(".eow-modal-content").innerHTML=`<h2>${title}</h2>${body}`;modal.hidden=false;};
+ const show=(title,body)=>{modal.querySelector(".eow-modal-content").innerHTML=`<h2>${title}</h2>${body}`;modal.querySelector(".eow-modal-close").setAttribute("aria-label",t("关闭","Close"));modal.hidden=false;};
  const stories=async()=>{
   const {data,error}=await supabase.from("eow_stories").select("*").gt("expires_at",new Date().toISOString()).order("created_at",{ascending:false}).limit(40);
   const box=$("#activeMembers");if(error){console.warn(error);return;}
