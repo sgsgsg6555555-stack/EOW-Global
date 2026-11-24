@@ -20,7 +20,7 @@ create index if not exists eow_verification_user_status_created_idx
 
 -- 不清理历史申请；使用事务级用户锁阻止未来重复待审申请。
 create or replace function public.eow_prevent_duplicate_pending_verification()
-returns trigger language plpgsql set search_path = '' as $
+returns trigger language plpgsql set search_path = '' as $$
 begin
   if new.status = 'pending' then
     perform pg_advisory_xact_lock(hashtext(new.user_id::text));
@@ -31,7 +31,7 @@ begin
   end if;
   return new;
 end;
-$;
+$$;
 drop trigger if exists eow_prevent_duplicate_pending_verification on public.eow_verification_applications;
 create trigger eow_prevent_duplicate_pending_verification
 before insert or update of status, user_id on public.eow_verification_applications
@@ -285,13 +285,13 @@ with check (
 );
 
 -- 启用通话会话表的 Postgres Changes，以便接收方收到来电提醒。
-do $
+do $$
 begin
   if exists (select 1 from pg_publication where pubname = 'supabase_realtime')
      and not exists (select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='eow_calls') then
     alter publication supabase_realtime add table public.eow_calls;
   end if;
-end $;
+end $$;
 
 commit;
 
