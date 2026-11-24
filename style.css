@@ -44,3 +44,7 @@
 
 /* Social post ownership actions */
 .post-owner-actions{display:flex;align-items:center;gap:4px;margin-left:auto}.post-owner-actions .action{font-size:12px;padding:6px 8px}.post-owner-actions .danger-text,.comment-delete{color:#c43d54}.comment-delete{font-size:12px;margin-left:6px}.comment{display:flex;align-items:flex-start;gap:5px;flex-wrap:wrap}.post-actions .action span{font-variant-numeric:tabular-nums}
+
+
+/* Conversation unread badges */
+.conversation-item .count-pill{flex:0 0 auto;min-width:22px;text-align:center}.bubble time{display:block;margin-top:5px;font-size:10px;opacity:.72}
