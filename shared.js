@@ -44,11 +44,15 @@ export function postCard(post, author, liked=false, comments=[], currentUserId=n
  return `<article class="post eow-post" data-post="${esc(post.id)}">
   <div class="post-head">${avatarHTML(author)}<div class="meta"><strong>${esc(name)} ${verifiedBadgeHTML(author)}</strong><small>${esc(author?.username?"@"+author.username:(en?"EOW user":"EOW 用户"))} · <time datetime="${esc(post.created_at||"")}" title="${new Date(post.created_at||Date.now()).toLocaleString(en?"en-US":"zh-CN")}">${relativeTime(post.created_at)}</time></small></div></div>
   ${post.content?`<div class="post-content">${esc(post.content)}</div>`:""}${media}
+  <div class="eow-post-stats" aria-label="${en?"Post engagement":"动态互动数据"}">
+   <span class="eow-stat-like">♥ <b data-like-count>${likes.toLocaleString(en?"en-US":"zh-CN")}</b> <span data-i18n="likes">${en?"Likes":"点赞"}</span></span>
+   <span class="eow-stat-comments"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H6l-3 2v-5.5A7.5 7.5 0 1 1 20 11.5Z"/></svg> <b data-comment-count>${commentCount.toLocaleString(en?"en-US":"zh-CN")}</b> <span data-i18n="comments">${en?"comments":"条评论"}</span></span>
+  </div>
   <div class="post-actions eow-post-actions">
-   <button class="action ${liked?"liked":""}" data-action="like" aria-label="${likeLabel}">♥ <b class="action-count" data-like-count>${likes.toLocaleString(en?"en-US":"zh-CN")}</b><span class="sr-only" data-i18n="likedLabel">${likeLabel}</span></button>
-   <button class="action" data-action="toggle-comments" aria-label="${commentLabel}">▢ <b class="action-count" data-comment-count>${commentCount.toLocaleString(en?"en-US":"zh-CN")}</b><span class="sr-only" data-i18n="commentAction">${commentLabel}</span></button>
-   <button class="action" data-action="share-post" aria-label="${en?"Share":"分享"}">↗ <span data-i18n="share">${en?"Share":"分享"}</span></button>
-   <button class="action ${stats.saved?"saved":""}" data-action="bookmark" aria-pressed="${stats.saved?"true":"false"}" aria-label="${en?"Save post":"收藏动态"}">▣ <span data-i18n="savePost">${stats.saved?(en?"Saved":"已收藏"):(en?"Save":"收藏")}</span></button>
+   <button class="action eow-like-action ${liked?"liked":""}" data-action="like" aria-label="${likeLabel}"><svg class="action-icon heart-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.9a5.5 5.5 0 0 0-7.8 0L12 5.9l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.3 1-1a5.5 5.5 0 0 0 0-7.8Z"/></svg><span class="action-label" data-i18n="likedLabel">${likeLabel}</span></button>
+   <button class="action eow-comment-action" data-action="toggle-comments" aria-label="${commentLabel}"><svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H6l-3 2v-5.5A7.5 7.5 0 1 1 20 11.5Z"/></svg><span class="action-label" data-i18n="commentAction">${commentLabel}</span></button>
+   <button class="action eow-share-action" data-action="share-post" aria-label="${en?"Share":"分享"}"><svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0L7 9m5-5 5 5M5 14v5h14v-5"/></svg><span class="action-label" data-i18n="share">${en?"Share":"分享"}</span></button>
+   <button class="action eow-save-action ${stats.saved?"saved":""}" data-action="bookmark" aria-pressed="${stats.saved?"true":"false"}" aria-label="${en?"Save post":"收藏动态"}"><svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.8h12v17l-6-3.8-6 3.8v-17Z"/></svg><span class="action-label" data-i18n="savePost">${stats.saved?(en?"Saved":"已收藏"):(en?"Save":"收藏")}</span></button>
   </div>
   <div class="comment-list" hidden>${comments.slice(-3).map(c=>`<div class="comment"><strong>${esc(displayName(c.profile))}</strong>${esc(c.content)}</div>`).join("")}<form class="comment-form"><input class="field" name="content" maxlength="1000" placeholder="${en?"Write a comment…":"写下评论…"}" required><button class="btn small">${en?"Send":"发送"}</button></form></div>
  </article>`;
