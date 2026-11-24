@@ -281,6 +281,50 @@ if (shell) {
       }
     );
 
+async function handlePostManagement(button, card) {
+  const action = button.dataset.action;
+  button.disabled = true;
+  try {
+    if (action === "edit-post") {
+      const contentEl = card.querySelector(".post-content");
+      const current = contentEl?.textContent || "";
+      const next = prompt("编辑动态内容：", current);
+      if (next === null) return;
+      const content = next.trim();
+      if (!content) throw new Error("动态内容不能为空；如需移除内容，请删除这条动态。");
+      const { error } = await supabase.from("posts").update({ content }).eq("id", card.dataset.post).eq("user_id", shell.user.id);
+      if (error) throw error;
+      if (contentEl) contentEl.textContent = content;
+      else {
+        const el = document.createElement("div");
+        el.className = "post-content";
+        el.textContent = content;
+        card.querySelector(".post-head").after(el);
+      }
+    } else if (action === "delete-post") {
+      if (!confirm("确定删除这条动态吗？此操作无法撤销。")) return;
+      const { error } = await supabase.from("posts").delete().eq("id", card.dataset.post).eq("user_id", shell.user.id);
+      if (error) throw error;
+      card.remove();
+    } else if (action === "delete-comment") {
+      const comment = button.closest("[data-comment]");
+      if (!comment || !confirm("确定删除这条评论吗？")) return;
+      const { error } = await supabase.from("comments").delete().eq("id", comment.dataset.comment).eq("user_id", shell.user.id);
+      if (error) throw error;
+      comment.remove();
+      const count = card.querySelector('[data-action="toggle-comments"] span');
+      if (count) {
+        const value = Math.max(0, Number(count.textContent || 0) - 1);
+        count.textContent = value || "";
+      }
+    }
+  } catch (error) {
+    alert("操作失败：" + (error?.message || error));
+  } finally {
+    button.disabled = false;
+  }
+}
+
     // 点赞和评论展开
     $("#communityPosts").addEventListener(
       "click",
@@ -294,6 +338,11 @@ if (shell) {
         if (!card) return;
 
         const postId = card.dataset.post;
+
+        if (["edit-post","delete-post","delete-comment"].includes(button.dataset.action)) {
+          await handlePostManagement(button, card);
+          return;
+        }
 
         if (button.dataset.action === "toggle-comments") {
           const box = card.querySelector(".comment-list");
