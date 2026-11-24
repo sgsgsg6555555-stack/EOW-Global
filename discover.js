@@ -1,4 +1,4 @@
-import {supabase,$,initShell,avatarHTML,displayName,esc} from "./shared.js?v=7";
+import {supabase,$,initShell,avatarHTML,displayName,esc,trackActivity} from "./shared.js?v=7";
 const shell=await initShell("discover");
 if(shell){
  let users=[],relations=[],following=new Set();
@@ -43,6 +43,7 @@ if(shell){
     else result=await supabase.from("friendships").delete().eq("id",rel.id).eq("requester_id",shell.user.id);
    }
    if(result?.error)throw result.error;
+   if(act==="request")await trackActivity("friend_request_sent");
    await load();
   }catch(error){alert("操作失败："+(error.message||error));b.disabled=false;}
  });
