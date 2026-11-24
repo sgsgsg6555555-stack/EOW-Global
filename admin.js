@@ -40,10 +40,10 @@ async function loadPosts(){
  if(!data?.length)empty("postsBody",4);
 }
 async function loadVerifications(){
- const {data,error}=await supabase.from("eow_verification_applications").select("id,user_id,real_name,application_type,proof_url,reason,status,admin_note,reviewed_at,created_at").order("created_at",{ascending:false}).limit(100);
+ const {data,error}=await supabase.from("eow_verification_applications").select("id,user_id,real_name,application_type,proof_url,document_url,reason,status,admin_note,reviewed_at,created_at").order("created_at",{ascending:false}).limit(100);
  if(error)return cellError("verificationBody",6,error);
  const people=await getProfiles((data||[]).map(v=>v.user_id));
- $("#verificationBody").innerHTML=(data||[]).map(v=>`<tr><td>${safe(displayName(people[v.user_id]))}<br><small>${safe(v.real_name||"未填写")} · ${safe(v.application_type||"未分类")}<br>${safe(v.user_id)}</small></td><td>${safe(v.reason||"")}</td><td>${v.proof_url?`<a class="admin-link" href="${safe(v.proof_url)}" target="_blank" rel="noopener noreferrer">查看证明</a>`:"未提供"}</td><td><span class="admin-pill">${safe(v.status)}</span>${v.admin_note?`<div class="admin-note">${safe(v.admin_note)}</div>`:""}</td><td>${date(v.created_at)}</td><td>${v.status==="pending"?`<button class="btn small" data-review="${safe(v.id)}" data-status="approved">通过</button> <button class="btn secondary small" data-review="${safe(v.id)}" data-status="rejected">拒绝</button>`:"已审核"}</td></tr>`).join("");
+ $("#verificationBody").innerHTML=(data||[]).map(v=>`<tr><td>${safe(displayName(people[v.user_id]))}<br><small>${safe(v.real_name||"未填写")} · ${safe(v.application_type||"未分类")}<br>${safe(v.user_id)}</small></td><td>${safe(v.reason||"")}</td><td>${(v.proof_url||v.document_url)?`<a class="admin-link" href="${safe(v.proof_url||v.document_url)}" target="_blank" rel="noopener noreferrer">查看证明</a>`:"未提供"}</td><td><span class="admin-pill">${safe(v.status)}</span>${v.admin_note?`<div class="admin-note">${safe(v.admin_note)}</div>`:""}</td><td>${date(v.created_at)}</td><td>${v.status==="pending"?`<button class="btn small" data-review="${safe(v.id)}" data-status="approved">通过</button> <button class="btn secondary small" data-review="${safe(v.id)}" data-status="rejected">拒绝</button>`:"已审核"}</td></tr>`).join("");
  if(!data?.length)empty("verificationBody",6);
 }
 async function loadReports(){
