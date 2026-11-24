@@ -78,7 +78,7 @@ export async function initSocialExtras(shell){
  $("#eowEventCreate").addEventListener("click",createEvent);
  $("#eowPollCreate").addEventListener("click",async()=>{
   const question=prompt(t("投票问题","Poll question"));if(!question?.trim())return;
-  const raw=prompt(t("输入选项，以英文逗号分隔（至少两个）","Options separated by commas (at least two)"),"选项一,选项二");if(!raw)return;
+  const raw=prompt(t("输入选项，以英文逗号分隔（至少两个）","Options separated by commas (at least two)"),(document.documentElement.lang==="en"?"Option 1,Option 2":"选项一,选项二"));if(!raw)return;
   const options=raw.split(/[,，]/).map(x=>x.trim()).filter(Boolean).slice(0,6);if(options.length<2){alert(t("至少需要两个选项","At least two options are required"));return;}
   const {data:post,error:pErr}=await supabase.from("posts").insert({user_id:shell.user.id,content:question.trim(),media_type:"text"}).select("id").single();if(pErr){alert(pErr.message);return;}
   const {data:poll,error:qErr}=await supabase.from("eow_polls").insert({post_id:post.id}).select("id").single();if(qErr){alert(qErr.message);return;}
@@ -94,6 +94,6 @@ export async function initSocialExtras(shell){
   box.innerHTML=rows.map(p=>`<article class="eow-saved-row"><a href="feed.html#post-${encodeURIComponent(p.id)}">${esc((p.content||t("媒体动态","Media post")).slice(0,160))}</a><button data-unsave="${esc(p.id)}" class="eow-mini-action">${t("取消收藏","Remove")}</button></article>`).join("");
   box.addEventListener("click",async ev=>{const b=ev.target.closest("[data-unsave]");if(!b)return;const {error}=await supabase.from("eow_saved_posts").delete().eq("user_id",shell.user.id).eq("post_id",b.dataset.unsave);if(error)alert(error.message);else b.closest(".eow-saved-row").remove();},{once:true});
  });
- document.addEventListener("eow:languagechange",()=>{stories();eventList();});
+ document.addEventListener("eow:languagechange",()=>{const en=document.documentElement.lang==="en";const heading=document.querySelector(".eow-events-panel .eow-panel-heading h2");if(heading)heading.textContent=en?"Upcoming events":"近期活动";const create=$("#createEvent");if(create)create.textContent=en?"＋ Create":"＋ 创建";const poll=$("#eowPollCreate");if(poll)poll.textContent=en?"▤ Create poll":"▤ 发起投票";const event=$("#eowEventCreate");if(event)event.textContent=en?"▦ Event":"▦ 创建活动";const saved=$("#eowSavedOpen");if(saved)saved.textContent=en?"▣ Saved posts":"▣ 我的收藏";stories();eventList();});
  await Promise.all([stories(),eventList()]);
 }
