@@ -174,3 +174,37 @@ body.eow-feed-page{--eow-bg:#050d1e;--eow-panel:#0b1830;--eow-panel2:#101f3b;--e
 .verified-badge .verified-badge-shape{fill:#1687f8;stroke:none}
 .verified-badge .verified-badge-check{fill:none;stroke:#fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
 .eow-feed-page .verified-badge{width:22px;height:22px;flex-basis:22px;margin-left:4px}
+
+/* Final verified badge cleanup: no white frame, compact icon */
+.verified-badge,
+.eow-feed-page .verified-badge{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:16px!important;
+  height:16px!important;
+  min-width:16px!important;
+  flex:0 0 16px!important;
+  margin-left:4px!important;
+  padding:0!important;
+  border:0!important;
+  outline:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  filter:none!important;
+  vertical-align:-.16em!important;
+  font-size:0!important;
+  line-height:0!important;
+}
+.verified-badge svg{
+  display:block!important;
+  width:16px!important;
+  height:16px!important;
+  overflow:visible!important;
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+.verified-badge .verified-badge-shape{fill:#1687f8!important;stroke:none!important}
+.verified-badge .verified-badge-check{fill:none!important;stroke:#fff!important;stroke-width:3!important;stroke-linecap:round!important;stroke-linejoin:round!important}
