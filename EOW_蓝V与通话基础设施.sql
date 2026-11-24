@@ -263,6 +263,15 @@ with check (
   )
 );
 
+-- 启用通话会话表的 Postgres Changes，以便接收方收到来电提醒。
+do $
+begin
+  if exists (select 1 from pg_publication where pubname = 'supabase_realtime')
+     and not exists (select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='eow_calls') then
+    alter publication supabase_realtime add table public.eow_calls;
+  end if;
+end $;
+
 commit;
 
 -- 执行后可检查：
