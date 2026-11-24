@@ -103,10 +103,10 @@ if (shell) {
           `;
         }).join("") || (members.length ? "成员资料暂时无法加载。" : "暂时没有成员");
 
-      $("#membershipButton").addEventListener(
-        "click",
-        toggleMembership
-      );
+      $("#membershipButton").addEventListener("click", toggleMembership);
+      $("#communityPostForm").querySelectorAll("textarea,button").forEach(el => { el.disabled = !isJoined; });
+      if (!isJoined) setNotice($("#communityPostNotice"), "加入社区后即可发布社区动态。", "");
+      else setNotice($("#communityPostNotice"), "", "");
     }
 
     // 加入或退出社区
@@ -234,10 +234,7 @@ if (shell) {
         `共 ${posts.length} 条社区动态`;
     }
 
-    // 发布社区动态
-    $("#communityPostForm").querySelectorAll("textarea,button").forEach(el => { el.disabled = !isJoined; });
-    if (!isJoined) setNotice($("#communityPostNotice"), "加入社区后即可发布社区动态。", "");
-
+    // 发布表单状态在 loadMembers() 中根据实际成员身份设置。
     $("#communityPostForm").addEventListener(
       "submit",
       async e => {
