@@ -1,5 +1,5 @@
 ﻿import {supabase,$,initShell,shellHeader,avatarHTML,displayName,getProfiles,postCard,setNotice,trackActivity,esc} from "./shared.js?v=15";
-import {renderPollCard,initSocialExtras} from "./social-extras.js?v=2";
+import {renderPollCard,initSocialExtras} from "./social-extras.js?v=3";
 const t=(zh,en)=>document.documentElement.lang==="en"?en:zh;
 const shell=await initShell("home");if(shell){
 $("#composerAvatar").innerHTML=avatarHTML(shell.profile);
