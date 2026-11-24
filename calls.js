@@ -1,5 +1,5 @@
 // EOW one-to-one WebRTC calls. TURN credentials are intentionally not embedded in the client.
-const ICE_SERVERS = [{ urls: "stun:stun.l.google.com:19302" }];
+const ICE_SERVERS = [{ urls: ["stun:stun.l.google.com:19302","stun:stun1.l.google.com:19302"] }, ...(window.EOW_TURN_SERVERS || [])];
 const style = `
 #eowCallLayer{position:fixed;inset:0;z-index:9999;background:#0b1220cc;display:grid;place-items:center;padding:16px}
 #eowCallLayer[hidden]{display:none}
@@ -15,7 +15,7 @@ const style = `
 @media(max-width:520px){.eow-call-media{grid-template-columns:1fr}.eow-call-media video{max-height:220px}}
 `;
 
-export async function initCallUI(user, supabase) {
+export async function initCallUI(user, supabase, onIncoming = null) {
   if (window.eowCalls) return window.eowCalls;
   if (!user || !supabase) return null;
   if (!document.getElementById("eowCallStyle")) {
@@ -36,13 +36,13 @@ export async function initCallUI(user, supabase) {
   document.body.append(root);
   const $=id=>root.querySelector("#"+id);
   const status=$("eowCallStatus"),remoteVideo=$("eowRemoteVideo"),localVideo=$("eowLocalVideo"),remoteAudio=$("eowRemoteAudio");
-  let current=null,channel=null,pc=null,localStream=null,remoteStream=null,remoteCandidates=[],ringTimer=null,muted=false,cameraOff=false,cameraFacing="user";
+  let current=null,signalChannel=null,pc=null,localStream=null,remoteStream=null,remoteCandidates=[],ringTimer=null,muted=false,cameraOff=false,cameraFacing="user";
   const setStatus=t=>{status.textContent=t;};
   const show=(title,message)=>{root.hidden=false;$("eowCallTitle").textContent=title;setStatus(message);};
-  const send=async(event,payload={})=>{
-    if(!channel)throw new Error("通话信令频道尚未连接");
-    const result=await channel.send({type:"broadcast",event:"signal",payload:{...payload,event,sender_id:user.id}});
-    if(result!=="ok")throw new Error("通话信令发送失败");
+  const send=async(signalType,payload={})=>{
+    if(!current)throw new Error("当前没有通话");
+    const {error}=await supabase.from("eow_call_signals").insert({call_id:current.id,sender_id:user.id,receiver_id:current.peerId,signal_type:signalType,payload});
+    if(error)throw error;
   };
   const closeMedia=()=>{
     if(pc){pc.ontrack=null;pc.onicecandidate=null;pc.onconnectionstatechange=null;pc.close();pc=null;}
@@ -52,7 +52,7 @@ export async function initCallUI(user, supabase) {
   };
   const cleanup=async()=>{
     if(ringTimer)clearTimeout(ringTimer);ringTimer=null;
-    if(channel){const old=channel;channel=null;await supabase.removeChannel(old);}
+    if(signalChannel){const old=signalChannel;signalChannel=null;await supabase.removeChannel(old);}
     closeMedia();current=null;root.hidden=true;
     $("eowAcceptCall").hidden=false;$("eowRejectCall").hidden=false;
     $("eowMuteCall").hidden=true;$("eowCameraCall").hidden=true;$("eowSwitchCamera").hidden=true;$("eowEndCall").hidden=true;
@@ -78,8 +78,9 @@ export async function initCallUI(user, supabase) {
     return pc;
   };
   const subscribeCall=async(callId)=>{
-    channel=supabase.channel("eow-call:"+callId,{config:{private:true}});
-    channel.on("broadcast",{event:"signal"},async({payload})=>{
+    signalChannel=supabase.channel("eow-call-signals:"+callId);
+    signalChannel.on("postgres_changes",{event:"INSERT",schema:"public",table:"eow_call_signals",filter:"call_id=eq."+callId},async({new:row})=>{
+      const payload={...(row?.payload||{}),event:row?.signal_type,sender_id:row?.sender_id};
       if(!current||payload?.sender_id===user.id)return;
       try{
         if(payload.event==="ready"&&current.role==="caller"){
@@ -157,7 +158,7 @@ export async function initCallUI(user, supabase) {
     current={id:call.id,peerId:call.caller_id,type:call.call_type,role:"callee"};
     try{
       await subscribeCall(call.id);
-      show(call.call_type==="video"?"视频来电":"语音来电","好友来电 · "+(call.call_type==="video"?"视频通话":"语音通话"));
+      show(call.call_type==="video"?"视频来电":"语音来电","好友来电 · "+(call.call_type==="video"?"视频通话":"语音通话"));\n      if(onIncoming)onIncoming(call.caller_id);
       $("eowAcceptCall").hidden=false;$("eowRejectCall").hidden=false;
       $("eowMuteCall").hidden=true;$("eowCameraCall").hidden=true;$("eowSwitchCamera").hidden=true;$("eowEndCall").hidden=true;
       ringTimer=setTimeout(async()=>{if(current?.id===call.id){try{await supabase.rpc("eow_expire_incoming_calls");}catch{}await cleanup();}},45000);
@@ -172,7 +173,7 @@ export async function initCallUI(user, supabase) {
     const {data}=await supabase.from("eow_calls").select("id,caller_id,call_type,created_at").eq("callee_id",user.id).eq("status","ringing").order("created_at",{ascending:false}).limit(1).maybeSingle();
     if(data)await incoming(data);
   }catch(err){console.warn("来电监听初始化失败",err);}
-  window.addEventListener("beforeunload",()=>{if(inbound)supabase.removeChannel(inbound);if(channel)supabase.removeChannel(channel);closeMedia();});
+  window.addEventListener("beforeunload",()=>{if(inbound)supabase.removeChannel(inbound);if(signalChannel)supabase.removeChannel(signalChannel);closeMedia();});
   window.eowCalls={startCall};
   return window.eowCalls;
 }
