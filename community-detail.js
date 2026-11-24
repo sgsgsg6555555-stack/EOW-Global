@@ -106,6 +106,7 @@ if (shell) {
                 <strong>${displayName(p)}</strong>
                 <small>${m.role === "owner" ? "社区创建者" : m.role === "moderator" ? "社区管理员" : "社区成员"}</small>
               </div>
+              <div class="admin-actions">${roleButton}${removeButton}</div>
             </div>
           `;
         }).join("") || (members.length ? "成员资料暂时无法加载。" : "暂时没有成员");
