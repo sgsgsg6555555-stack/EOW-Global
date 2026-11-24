@@ -27,10 +27,10 @@ async function loadStats(){
 async function loadUsers(){
  const q=$("#userSearch").value.trim();
  let req=supabase.from("profiles").select("id,username,display_name,avatar_url,created_at,is_verified").order("created_at",{ascending:false}).limit(150);
- if(q)req=req.ilike("username",\`%\${q.replace(/[%_,]/g,"")}%\`);
+ if(q)req=req.ilike("username",`%${q.replace(/[%_,]/g,"")}%`);
  const {data,error}=await req;
  if(error)return cellError("usersBody",5,error);
- $("#usersBody").innerHTML=(data||[]).map(p=>\`<tr><td>\${avatarHTML(p)} \${safe(displayName(p))} \${p.is_verified?'<span class="admin-pill">蓝 V</span>':""}</td><td>\${safe(p.username)}</td><td><small>\${safe(p.id)}</small></td><td>\${date(p.created_at)}</td><td><button class="admin-user-open" type="button" data-user-detail="\${safe(p.id)}">查看详情</button></td></tr>\`).join("");
+ $("#usersBody").innerHTML=(data||[]).map(p=>`<tr><td>${avatarHTML(p)} <button class="admin-user-open" type="button" data-user-detail="${safe(p.id)}">${safe(displayName(p))}</button> ${p.is_verified?'<span class="admin-pill">蓝 V</span>':""}</td><td>${safe(p.username)}</td><td><small>${safe(p.id)}</small></td><td>${date(p.created_at)}</td><td><button class="admin-user-open" type="button" data-user-detail="${safe(p.id)}">查看详情</button></td></tr>`).join("");
  if(!data?.length)empty("usersBody",5);
 }
 async function loadPosts(){
@@ -43,7 +43,7 @@ async function loadVerifications(){
  const {data,error}=await supabase.from("eow_verification_applications").select("id,user_id,real_name,application_type,document_url,reason,status,admin_note,reviewed_at,created_at").order("created_at",{ascending:false}).limit(100);
  if(error)return cellError("verificationBody",6,error);
  const people=await getProfiles((data||[]).map(v=>v.user_id));
- $("#verificationBody").innerHTML=(data||[]).map(v=>\`<tr><td>\${safe(displayName(people[v.user_id]))}<br><small>\${safe(v.real_name||"未填写")} · \${safe(v.application_type||"未分类")}<br>\${safe(v.user_id)}</small></td><td>\${safe(v.reason||"")}</td><td>\${v.document_url?\`<a class="admin-link" href="\${safe(v.document_url)}" target="_blank" rel="noopener noreferrer">查看证明</a>\`:"未提供"}</td><td><span class="admin-pill">\${safe(v.status)}</span>\${v.admin_note?\`<div class="admin-note">\${safe(v.admin_note)}</div>\`:""}</td><td>\${date(v.created_at)}</td><td>\${v.status==="pending"?\`<button class="btn small" data-review="\${safe(v.id)}" data-status="approved">通过</button> <button class="btn secondary small" data-review="\${safe(v.id)}" data-status="rejected">拒绝</button>\`:"已审核"}</td></tr>\`).join("");
+ $("#verificationBody").innerHTML=(data||[]).map(v=>`<tr><td>${safe(displayName(people[v.user_id]))}<br><small>${safe(v.real_name||"未填写")} · ${safe(v.application_type||"未分类")}<br>${safe(v.user_id)}</small></td><td>${safe(v.reason||"")}</td><td>${v.document_url?`<a class="admin-link" href="${safe(v.document_url)}" target="_blank" rel="noopener noreferrer">查看证明</a>`:"未提供"}</td><td><span class="admin-pill">${safe(v.status)}</span>${v.admin_note?`<div class="admin-note">${safe(v.admin_note)}</div>`:""}</td><td>${date(v.created_at)}</td><td>${v.status==="pending"?`<button class="btn small" data-review="${safe(v.id)}" data-status="approved">通过</button> <button class="btn secondary small" data-review="${safe(v.id)}" data-status="rejected">拒绝</button>`:"已审核"}</td></tr>`).join("");
  if(!data?.length)empty("verificationBody",6);
 }
 async function loadReports(){
@@ -91,7 +91,7 @@ async function showUserDetail(id){
   if(pRes.error)throw pRes.error;
   if(!pRes.data)throw new Error("用户不存在或无权查看");
   const p=pRes.data,v=verification.data;
-  content.innerHTML=\`<div class="admin-head-row" style="margin-bottom:16px">\${avatarHTML(p)}<div style="flex:1"><strong>\${safe(displayName(p))}</strong><div class="admin-note">@\${safe(p.username||"")}</div></div>\${p.is_verified?'<span class="admin-pill">蓝 V 已认证</span>':'<span class="admin-pill">未认证</span>'}</div><div class="admin-detail-grid"><div class="admin-detail-item"><small>用户 ID</small>\${safe(p.id)}</div><div class="admin-detail-item"><small>注册时间</small>\${date(p.created_at)}</div><div class="admin-detail-item"><small>个人简介</small>\${safe(p.bio||"未填写")}</div><div class="admin-detail-item"><small>动态数量</small>\${posts.count??"—"}</div><div class="admin-detail-item"><small>粉丝数量</small>\${followers.count??"—"}</div><div class="admin-detail-item"><small>关注数量</small>\${following.count??"—"}</div><div class="admin-detail-item"><small>钱包余额</small>\${wallet.error?"无权读取":safe(wallet.data?.balance??0)+" "+safe(wallet.data?.currency||"CNY")}</div><div class="admin-detail-item"><small>最近蓝 V 申请</small>\${v?safe(v.status)+" · "+date(v.created_at):"暂无申请"}</div></div>\`;
+  content.innerHTML=`<div class="admin-head-row" style="margin-bottom:16px">${avatarHTML(p)}<div style="flex:1"><strong>${safe(displayName(p))}</strong><div class="admin-note">@${safe(p.username||"")}</div></div>${p.is_verified?'<span class="admin-pill">蓝 V 已认证</span>':'<span class="admin-pill">未认证</span>'}</div><div class="admin-detail-grid"><div class="admin-detail-item"><small>用户 ID</small>${safe(p.id)}</div><div class="admin-detail-item"><small>注册时间</small>${date(p.created_at)}</div><div class="admin-detail-item"><small>个人简介</small>${safe(p.bio||"未填写")}</div><div class="admin-detail-item"><small>动态数量</small>${posts.count??"—"}</div><div class="admin-detail-item"><small>粉丝数量</small>${followers.count??"—"}</div><div class="admin-detail-item"><small>关注数量</small>${following.count??"—"}</div><div class="admin-detail-item"><small>钱包余额</small>${wallet.error?"无权读取":safe(wallet.data?.balance??0)+" "+safe(wallet.data?.currency||"CNY")}</div><div class="admin-detail-item"><small>最近蓝 V 申请</small>${v?safe(v.status)+" · "+date(v.created_at):"暂无申请"}</div></div>`;
  }catch(e){content.textContent="读取用户详情失败："+(e.message||"未知错误");}
 }
 async function reviewVerification(id,nextStatus){
