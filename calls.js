@@ -1,5 +1,21 @@
 // EOW one-to-one WebRTC calls. TURN credentials are intentionally not embedded in the client.
-const ICE_SERVERS = [{ urls: ["stun:stun.l.google.com:19302","stun:stun1.l.google.com:19302"] }, ...(window.EOW_TURN_SERVERS || [])];
+let ICE_SERVERS = [{ urls: ["stun:stun.l.google.com:19302","stun:stun1.l.google.com:19302"] }];
+let turnIceServersLoaded = false;
+async function loadTurnIceServers(supabase) {
+  if (turnIceServersLoaded) return ICE_SERVERS;
+  const { data, error } = await supabase.functions.invoke("eow-turn-credentials", { body: {} });
+  if (error) throw new Error("无法获取 TURN 配置：" + (error.message || "请检查 Supabase Edge Function Secret"));
+  const servers = data?.iceServers;
+  if (!Array.isArray(servers) || !servers.length) throw new Error("TURN 服务没有返回有效的 ICE Servers");
+  const hasTurn = servers.some(server => {
+    const urls = Array.isArray(server.urls) ? server.urls : [server.urls];
+    return urls.some(url => typeof url === "string" && url.startsWith("turn"));
+  });
+  if (!hasTurn) throw new Error("TURN 配置缺少中继地址，请检查 Metered 凭证");
+  ICE_SERVERS = [...servers];
+  turnIceServersLoaded = true;
+  return ICE_SERVERS;
+}
 const style = `
 #eowCallLayer{position:fixed;inset:0;z-index:9999;background:#0b1220cc;display:grid;place-items:center;padding:16px}
 #eowCallLayer[hidden]{display:none}
@@ -112,6 +128,8 @@ export async function initCallUI(user, supabase, onIncoming = null) {
     if(!peerId||peerId===user.id)throw new Error("通话对象无效");
     show(type==="video"?"视频通话":"语音通话","正在验证好友关系…");
     try{
+      setStatus("正在安全获取 TURN 网络配置…");
+      await loadTurnIceServers(supabase);
       const {data:callId,error}=await supabase.rpc("eow_start_call",{p_callee_id:peerId,p_call_type:type});
       if(error)throw error;
       current={id:callId,peerId,type,role:"caller"};
@@ -128,6 +146,8 @@ export async function initCallUI(user, supabase, onIncoming = null) {
     const call=current;
     if(ringTimer)clearTimeout(ringTimer);ringTimer=null;
     try{
+      setStatus("正在安全获取 TURN 网络配置…");
+      await loadTurnIceServers(supabase);
       await ensureMedia(call.type);
       const {error}=await supabase.rpc("eow_respond_call",{p_call_id:call.id,p_response:"accepted"});
       if(error)throw error;
