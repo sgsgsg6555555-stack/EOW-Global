@@ -1,9 +1,9 @@
-﻿import {supabase,$,esc,avatarHTML,displayName,setNotice,shellHeader} from "./shared.js?v=4";
+﻿import {supabase,$,esc,avatarHTML,displayName,setNotice,shellHeader} from "./shared.js?v=6";
 if($("#header")) $("#header").innerHTML=shellHeader();
 const {data:{user},error:userError}=await supabase.auth.getUser();
 if(userError||!user){location.href="login.html?next="+encodeURIComponent("/admin.html");}
 else{
- const {data:admin,error:adminError}=await supabase.from("eow_admins").select("user_id,role,active").eq("user_id",user.id).eq("active",true).maybeSingle();
+ const {data:admin,error:adminError}=await supabase.from("eow_admins").select("user_id,role").eq("user_id",user.id).maybeSingle();
  if(adminError||!admin){$("#adminStatus").textContent="没有管理员权限。请由项目所有者在 Supabase SQL Editor 中将你的用户 UUID 添加到 eow_admins。";$("#adminStatus").classList.add("error");}
  else{
   $("#adminStatus").textContent=`已验证管理员身份：${admin.role}`;$("#adminApp").hidden=false;
@@ -49,7 +49,11 @@ else{
    const {data,error}=await supabase.from("eow_admin_audit_logs").select("*").order("created_at",{ascending:false}).limit(100);
    $("#auditBody").innerHTML=error?`<tr><td colspan="5">读取失败：${escText(error.message)}</td></tr>`:(data||[]).map(a=>`<tr><td>${new Date(a.created_at).toLocaleString("zh-CN")}</td><td>${escText(a.admin_id)}</td><td>${escText(a.action)}</td><td>${escText(a.target_type)} ${escText(a.target_id)}</td><td>${escText(JSON.stringify(a.details||{}))}</td></tr>`).join("")||"<tr><td colspan='5'>暂无日志</td></tr>";
   }
-  const loaders={users:loadUsers,posts:loadPosts,verifications:loadVerifications,reports:loadReports,gifts:loadGifts,finance:loadOrders,settings:loadSettings,audit:loadAudit};
+  async function loadPostReports(){
+   const {data,error}=await supabase.from("post_reports").select("id,post_id,reporter_id,reason,status,created_at").order("created_at",{ascending:false}).limit(150);
+   $("#postReportsBody").innerHTML=error?`<tr><td colspan="6">读取失败：${escText(error.message)}。请确认已执行 EOW_内容举报功能.sql。</td></tr>`:(data||[]).map(r=>`<tr><td>${escText(r.reporter_id)}</td><td>${escText(r.post_id)}</td><td>${escText(r.reason)}</td><td>${escText(r.status)}</td><td>${new Date(r.created_at).toLocaleString("zh-CN")}</td><td><div class="admin-actions"><button data-postreport="${escText(r.id)}" data-status="resolved">处理完成</button><button class="danger" data-postreport="${escText(r.id)}" data-status="dismissed">驳回</button></div></td></tr>`).join("")||"<tr><td colspan='6'>暂无动态举报</td></tr>";
+  }
+  const loaders={users:loadUsers,posts:loadPosts,verifications:loadVerifications,reports:loadReports,postreports:loadPostReports,gifts:loadGifts,finance:loadOrders,settings:loadSettings,audit:loadAudit};
   document.querySelectorAll("[data-tab]").forEach(btn=>btn.addEventListener("click",async()=>{document.querySelectorAll("[data-tab]").forEach(x=>x.classList.toggle("active",x===btn));document.querySelectorAll(".admin-panel").forEach(x=>x.hidden=x.id!=="tab-"+btn.dataset.tab);await loaders[btn.dataset.tab]();}));
   $("#userSearch").addEventListener("input",loadUsers);
   $("#adminApp").addEventListener("click",async e=>{
@@ -59,6 +63,7 @@ else{
     else if(b.dataset.userVerify){const value=b.dataset.value==="true";const {error}=await supabase.rpc("eow_admin_set_verified",{p_user:b.dataset.userVerify,p_verified:value});if(error)throw error;await loadUsers();}
     else if(b.dataset.postDelete){const {error}=await supabase.from("posts").delete().eq("id",b.dataset.postDelete);if(error)throw error;await audit("delete_post","post",b.dataset.postDelete);await loadPosts();}
     else if(b.dataset.verification){const status=b.dataset.status;const {data:app,error}=await supabase.from("eow_verification_applications").update({status,reviewed_by:user.id,reviewed_at:new Date().toISOString()}).eq("id",b.dataset.verification).select("user_id").single();if(error)throw error;if(status==="approved"){const {error:ve}=await supabase.rpc("eow_admin_set_verified",{p_user:app.user_id,p_verified:true});if(ve)throw ve;}await audit("review_verification","verification",b.dataset.verification,{status});await loadVerifications();}
+    else if(b.dataset.postreport){const status=b.dataset.status;const {error}=await supabase.from("post_reports").update({status}).eq("id",b.dataset.postreport);if(error)throw error;await audit("review_post_report","post_report",b.dataset.postreport,{status});await loadPostReports();}
     else if(b.dataset.report){const status=b.dataset.status;const {error}=await supabase.from("eow_reports").update({status,reviewed_by:user.id,reviewed_at:new Date().toISOString()}).eq("id",b.dataset.report);if(error)throw error;await audit("review_report","report",b.dataset.report,{status});await loadReports();}
     else if(b.dataset.giftToggle){const {error}=await supabase.from("eow_gifts").update({active:b.dataset.value==="true"}).eq("id",b.dataset.giftToggle);if(error)throw error;await audit("toggle_gift","gift",b.dataset.giftToggle);await loadGifts();}
     else if(b.dataset.giftDelete){const {error}=await supabase.from("eow_gifts").delete().eq("id",b.dataset.giftDelete);if(error)throw error;await audit("delete_gift","gift",b.dataset.giftDelete);await loadGifts();}

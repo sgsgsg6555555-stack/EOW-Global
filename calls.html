@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#276ef1">
+  <title>EOW - 音视频设备测试</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="header"></div>
+  <div class="layout">
+    <aside class="side" id="sideNav"></aside>
+    <main class="content">
+      <section class="panel">
+        <h1 class="section-title">音视频设备测试</h1>
+        <p class="muted">先检查浏览器、摄像头和麦克风是否可用。此页面只做本机设备预览，不会向其他用户发起通话，也不会上传或保存音视频。</p>
+        <div id="supportStatus" class="notice" role="status" aria-live="polite">正在检查浏览器能力…</div>
+      </section>
+      <section class="panel">
+        <div class="module-head"><div><h2 class="section-title">摄像头预览</h2><p class="muted">请允许浏览器访问摄像头和麦克风。</p></div><span id="deviceState" class="badge">未启动</span></div>
+        <div class="device-preview"><video id="localVideo" autoplay muted playsinline></video><div id="videoPlaceholder" class="device-placeholder">摄像头预览将在这里显示</div></div>
+        <div class="device-controls">
+          <label class="device-field">摄像头<select id="cameraSelect" class="field"><option value="">默认摄像头</option></select></label>
+          <label class="device-field">麦克风<select id="microphoneSelect" class="field"><option value="">默认麦克风</option></select></label>
+        </div>
+        <div class="device-actions">
+          <button class="btn" id="startDevices">开启设备</button>
+          <button class="btn secondary" id="toggleCamera" disabled>关闭摄像头</button>
+          <button class="btn secondary" id="toggleMicrophone" disabled>静音麦克风</button>
+          <button class="btn danger" id="stopDevices" disabled>停止并释放设备</button>
+        </div>
+        <div id="deviceNotice" aria-live="polite"></div>
+      </section>
+      <section class="panel">
+        <h2 class="section-title">麦克风输入检测</h2>
+        <p class="muted">开启设备后，对着麦克风说话，观察输入电平是否变化。</p>
+        <div class="audio-meter" role="meter" aria-label="麦克风输入电平" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="audioMeterFill"></span></div>
+        <div class="module-tools"><span id="audioLevelText" class="muted">尚未检测</span><span class="muted">音频只在本机分析，不会上传</span></div>
+      </section>
+      <section class="panel">
+        <h2 class="section-title">浏览器 WebRTC 能力</h2>
+        <div id="rtcCapabilities" class="capability-list"></div>
+        <p class="muted">真正的一对一/多人通话还需要信令服务、STUN/TURN 配置和对端设备。当前页面尚未建立远端连接。</p>
+      </section>
+    </main>
+  </div>
+  <script type="module" src="calls.js?v=1"></script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+{
+  "name": "eow-global",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node --check shared.js && node --check home.js && node --check calls.js && node --check settings.js && node --check admin.js && node --check communities.js && node --check community-detail.js && node --check discover.js && node --check friends.js && node --check login.js && node --check messages.js && node --check notifications.js && node --check profile.js && node --check register.js && node --check reset-password.js && node --check videos.js && node --check wallet.js"
+  }
+}

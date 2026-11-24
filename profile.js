@@ -1,4 +1,4 @@
-﻿import {supabase,$,initShell,shellHeader,avatarHTML,displayName,getProfiles,postCard,setNotice,esc} from "./shared.js?v=4";
+﻿import {supabase,$,initShell,shellHeader,avatarHTML,displayName,getProfiles,postCard,setNotice,esc} from "./shared.js?v=5";
 const shell=await initShell("profile");if(shell){const targetId=new URLSearchParams(location.search).get("id")||shell.user.id;const own=targetId===shell.user.id;
 async function load(){const {data:p,error}=await supabase.from("profiles").select("*").eq("id",targetId).maybeSingle();if(error||!p){$("#profileHead").innerHTML=`<section class="panel">无法读取用户资料：${error?.message||"用户不存在"}</section>`;return;}
 const [postsRes,followersRes,followingRes]=await Promise.all([supabase.from("posts").select("*").eq("user_id",targetId).order("created_at",{ascending:false}).limit(30),supabase.from("follows").select("follower_id",{count:"exact",head:true}).eq("following_id",targetId),supabase.from("follows").select("following_id",{count:"exact",head:true}).eq("follower_id",targetId)]);
@@ -8,8 +8,56 @@ $("#profileHead").innerHTML=`<div class="profile-cover ${p.cover_url?"has-cover"
 if(own){$("#editBtn").onclick=()=>{$("#profileEdit").hidden=!$("#profileEdit").hidden;};$("#cancelEdit").onclick=()=>$("#profileEdit").hidden=true;$("#editForm").onsubmit=async e=>{e.preventDefault();const btn=e.submitter;btn.disabled=true;try{let avatar_url=p.avatar_url,cover_url=p.cover_url;const f=$("#avatarFile").files[0];if(f){if(f.size>5*1024*1024)throw new Error("头像不能超过 5MB");const path=`${shell.user.id}/${Date.now()}-${f.name.replace(/[^a-zA-Z0-9._-]/g,"_")}`;const {error:up}=await supabase.storage.from("avatars").upload(path,f,{upsert:true,contentType:f.type});if(up)throw up;avatar_url=supabase.storage.from("avatars").getPublicUrl(path).data.publicUrl;}const cf=$("#coverFile").files[0];if(cf){if(cf.size>8*1024*1024)throw new Error("主页背景不能超过 8MB");if(!cf.type.startsWith("image/"))throw new Error("主页背景必须是图片");const cp=`${shell.user.id}/cover-${Date.now()}-${cf.name.replace(/[^a-zA-Z0-9._-]/g,"_")}`;const {error:cup}=await supabase.storage.from("avatars").upload(cp,cf,{upsert:true,contentType:cf.type});if(cup)throw cup;cover_url=supabase.storage.from("avatars").getPublicUrl(cp).data.publicUrl;}
 const {error:save}=await supabase.from("profiles").update({display_name:$("#editName").value.trim(),bio:$("#editBio").value.trim(),avatar_url,cover_url}).eq("id",shell.user.id);if(save)throw save;await load();}catch(err){setNotice($("#editNotice"),"保存失败："+err.message,"error");}finally{btn.disabled=false;}};}
 else{$("#followBtn").onclick=async()=>{const b=$("#followBtn");b.disabled=true;try{if(isFollowing){const {error}=await supabase.from("follows").delete().eq("follower_id",shell.user.id).eq("following_id",targetId);if(error)throw error;}else{const {error}=await supabase.from("follows").insert({follower_id:shell.user.id,following_id:targetId,created_at:new Date().toISOString()});if(error)throw error;}await load();}catch(e){alert("关注操作失败："+e.message);}finally{b.disabled=false;}};$("#friendBtn").onclick=async()=>{const b=$("#friendBtn");b.disabled=true;try{if(friend?.status==="pending"&&friend.addressee_id===shell.user.id){const {error}=await supabase.from("friendships").update({status:"accepted"}).eq("id",friend.id);if(error)throw error;}else if(!friend){const {error}=await supabase.from("friendships").insert({requester_id:shell.user.id,addressee_id:targetId,status:"pending",created_at:new Date().toISOString()});if(error)throw error;}await load();}catch(e){alert("好友操作失败："+e.message);}finally{b.disabled=false;}};$("#messageBtn").onclick=()=>location.href="messages.html?user="+encodeURIComponent(targetId);}
-const posts=postsRes.data||[];const profs=await getProfiles(posts.map(x=>x.user_id));$("#profilePosts").innerHTML=posts.map(x=>postCard(x,profs[x.user_id])).join("")||'<div class="empty">还没有发布动态。</div>';
-$("#profilePosts").onclick=async ev=>{const btn=ev.target.closest("button[data-action]");if(!btn)return;const card=btn.closest("[data-post]");if(btn.dataset.action==="toggle-comments"){const box=card.querySelector(".comment-list");box.hidden=!box.hidden;return;}if(btn.dataset.action==="like"){btn.disabled=true;try{const {data:existing,error:findErr}=await supabase.from("likes").select("id").eq("post_id",card.dataset.post).eq("user_id",shell.user.id).limit(1).maybeSingle();if(findErr)throw findErr;if(existing){const {error}=await supabase.from("likes").delete().eq("id",existing.id);if(error)throw error;btn.classList.remove("liked");btn.querySelector("span").textContent="点赞";}else{const {error}=await supabase.from("likes").insert({post_id:card.dataset.post,user_id:shell.user.id,created_at:new Date().toISOString()});if(error)throw error;btn.classList.add("liked");btn.querySelector("span").textContent="已赞";}}catch(err){alert("点赞失败："+err.message);}finally{btn.disabled=false;}}};
+const posts=postsRes.data||[];const profs=await getProfiles(posts.map(x=>x.user_id));$("#profilePosts").innerHTML=posts.map(x=>postCard(x,profs[x.user_id],false,[],shell.user.id)).join("")||'<div class="empty">还没有发布动态。</div>';
+async function handlePostManagement(button, card) {
+  const action = button.dataset.action;
+  button.disabled = true;
+  try {
+    if (action === "edit-post") {
+      const contentEl = card.querySelector(".post-content");
+      const current = contentEl?.textContent || "";
+      const next = prompt("编辑动态内容：", current);
+      if (next === null) return;
+      const content = next.trim();
+      if (!content) throw new Error("动态内容不能为空；如需移除内容，请删除这条动态。");
+      const { error } = await supabase.from("posts").update({ content }).eq("id", card.dataset.post).eq("user_id", shell.user.id);
+      if (error) throw error;
+      if (contentEl) contentEl.textContent = content;
+      else {
+        const el = document.createElement("div");
+        el.className = "post-content";
+        el.textContent = content;
+        card.querySelector(".post-head").after(el);
+      }
+    } else if (action === "delete-post") {
+      if (!confirm("确定删除这条动态吗？此操作无法撤销。")) return;
+      const { error } = await supabase.from("posts").delete().eq("id", card.dataset.post).eq("user_id", shell.user.id);
+      if (error) throw error;
+      card.remove();
+    } else if (action === "delete-comment") {
+      const comment = button.closest("[data-comment]");
+      if (!comment || !confirm("确定删除这条评论吗？")) return;
+      const { error } = await supabase.from("comments").delete().eq("id", comment.dataset.comment).eq("user_id", shell.user.id);
+      if (error) throw error;
+      comment.remove();
+      const count = card.querySelector('[data-action="toggle-comments"] span');
+      if (count) {
+        const value = Math.max(0, Number(count.textContent || 0) - 1);
+        count.textContent = value || "";
+      }
+    }
+  } catch (error) {
+    alert("操作失败：" + (error?.message || error));
+  } finally {
+    button.disabled = false;
+  }
+}
+
+$("#profilePosts").onclick=async ev=>{const btn=ev.target.closest("button[data-action]");if(!btn)return;const card=btn.closest("[data-post]");if (["edit-post","delete-post","delete-comment"].includes(btn.dataset.action)) {
+  await handlePostManagement(btn, card);
+  return;
+ }
+ if(btn.dataset.action==="toggle-comments"){const box=card.querySelector(".comment-list");box.hidden=!box.hidden;return;}if(btn.dataset.action==="like"){btn.disabled=true;try{const {data:existing,error:findErr}=await supabase.from("likes").select("id").eq("post_id",card.dataset.post).eq("user_id",shell.user.id).limit(1).maybeSingle();if(findErr)throw findErr;if(existing){const {error}=await supabase.from("likes").delete().eq("id",existing.id);if(error)throw error;btn.classList.remove("liked");btn.querySelector("span").textContent="点赞";}else{const {error}=await supabase.from("likes").insert({post_id:card.dataset.post,user_id:shell.user.id,created_at:new Date().toISOString()});if(error)throw error;btn.classList.add("liked");btn.querySelector("span").textContent="已赞";}}catch(err){alert("点赞失败："+err.message);}finally{btn.disabled=false;}}};
 $("#profilePosts").onsubmit=async ev=>{if(!ev.target.matches(".comment-form"))return;ev.preventDefault();const card=ev.target.closest("[data-post]");const input=ev.target.elements.content;const content=input.value.trim();if(!content)return;const {error}=await supabase.from("comments").insert({post_id:card.dataset.post,user_id:shell.user.id,content,created_at:new Date().toISOString()});if(error)alert("评论失败："+error.message);else{const row=document.createElement("div");row.className="comment";row.textContent=displayName(shell.profile)+": "+content;ev.target.before(row);input.value="";}};
 }
 await load();}

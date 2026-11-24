@@ -8,7 +8,7 @@ import {
   setNotice,
   displayName,
   avatarHTML
-} from "./shared.js?v=4";
+} from "./shared.js?v=5";
 
 const shell = await initShell("communities");
 
@@ -20,6 +20,9 @@ if (shell) {
   let community = null;
   let members = [];
   let isJoined = false;
+  let canManageMembers = false;
+  let isOwner = false;
+  $("#communityPostForm").querySelectorAll("textarea,button").forEach(el => { el.disabled = true; });
 
   if (!communityId) {
     $("#communityStatus").textContent = "缺少社区编号，请返回社区列表重新进入。";
@@ -47,6 +50,7 @@ if (shell) {
       $("#communityName").textContent = community.name;
       $("#communityDescription").textContent =
         community.description || "欢迎来到这个社区！";
+      renderAnnouncement();
 
       await Promise.allSettled([loadMembers(), loadPosts()]);
     }
@@ -67,9 +71,10 @@ if (shell) {
 
       members = data || [];
 
-      isJoined = members.some(
-        m => m.user_id === shell.user.id
-      );
+      const mine = members.find(m => m.user_id === shell.user.id);
+      isOwner = community?.owner_id === shell.user.id;
+      canManageMembers = isOwner;
+      isJoined = isOwner || !!mine;
 
       let profiles = {};
       try { profiles = await getProfiles(members.map(m => m.user_id)); }
@@ -81,8 +86,9 @@ if (shell) {
           id="membershipButton"
           class="btn small ${isJoined ? "secondary" : ""}"
           style="margin-left:12px"
+          ${community?.owner_id === shell.user.id ? "disabled" : ""}
         >
-          ${isJoined ? "退出社区" : "加入社区"}
+          ${community?.owner_id === shell.user.id ? "社区创建者" : isJoined ? "退出社区" : "加入社区"}
         </button>
       `;
 
@@ -91,25 +97,50 @@ if (shell) {
           const p = profiles[m.user_id];
           if (!p) return "";
 
+          const roleButton = isOwner && m.user_id !== shell.user.id && m.user_id !== community?.owner_id ? `<button class="btn ghost small" data-member-role="${m.user_id}" data-role="${m.role === "admin" ? "member" : "admin"}">${m.role === "admin" ? "取消管理员" : "设为管理员"}</button>` : "";
+          const removeButton = canManageMembers && m.user_id !== shell.user.id && m.user_id !== community?.owner_id ? `<button class="btn ghost small" data-member-remove="${m.user_id}">移除</button>` : "";
           return `
             <div class="suggestion">
               ${avatarHTML(p)}
               <div class="grow">
                 <strong>${displayName(p)}</strong>
-                <small>${m.role === "owner" ? "社区创建者" : "社区成员"}</small>
+                <small>${m.role === "owner" ? "社区创建者" : m.role === "admin" ? "社区管理员" : "社区成员"}</small>
               </div>
+              <div class="admin-actions">${roleButton}${removeButton}</div>
             </div>
           `;
         }).join("") || (members.length ? "成员资料暂时无法加载。" : "暂时没有成员");
 
-      $("#membershipButton").addEventListener(
-        "click",
-        toggleMembership
-      );
+      $("#membershipButton").addEventListener("click", toggleMembership);
+      $("#communityPostForm").querySelectorAll("textarea,button").forEach(el => { el.disabled = !isJoined; });
+      if (!isJoined) setNotice($("#communityPostNotice"), "加入社区后即可发布社区动态。", "");
+      else setNotice($("#communityPostNotice"), "", "");
+    }
+
+    function renderAnnouncement() {
+      const host = $("#communityAnnouncement");
+      if (!host) return;
+      const p = document.createElement("p");
+      p.textContent = community?.announcement || "暂无公告";
+      host.replaceChildren();
+      const heading = document.createElement("h2"); heading.textContent = "社区公告"; host.append(heading, p);
+      if (community?.owner_id === shell.user.id) {
+        const button = document.createElement("button"); button.className = "btn secondary small"; button.textContent = "编辑公告";
+        button.addEventListener("click", async () => {
+          const value = prompt("编辑社区公告（最多 1000 字）", community.announcement || "");
+          if (value === null) return;
+          if (value.length > 1000) { alert("公告不能超过 1000 字"); return; }
+          button.disabled = true;
+          const { data, error } = await supabase.from("communities").update({ announcement: value.trim() }).eq("id", communityId).eq("owner_id", shell.user.id).select("announcement").single();
+          if (error) { alert("保存失败：" + error.message + "。请确认已执行社区管理迁移。"); button.disabled = false; return; }
+          community.announcement = data.announcement; renderAnnouncement();
+        }); host.append(button);
+      }
     }
 
     // 加入或退出社区
     async function toggleMembership() {
+      if (community?.owner_id === shell.user.id) return;
 
       const button = $("#membershipButton");
       button.disabled = true;
@@ -222,7 +253,8 @@ if (shell) {
           p,
           profiles[p.user_id],
           liked,
-          cs
+          cs,
+          shell.user.id
         );
 
       }).join("");
@@ -231,7 +263,7 @@ if (shell) {
         `共 ${posts.length} 条社区动态`;
     }
 
-    // 发布社区动态
+    // 发布表单状态在 loadMembers() 中根据实际成员身份设置。
     $("#communityPostForm").addEventListener(
       "submit",
       async e => {
@@ -280,6 +312,50 @@ if (shell) {
       }
     );
 
+async function handlePostManagement(button, card) {
+  const action = button.dataset.action;
+  button.disabled = true;
+  try {
+    if (action === "edit-post") {
+      const contentEl = card.querySelector(".post-content");
+      const current = contentEl?.textContent || "";
+      const next = prompt("编辑动态内容：", current);
+      if (next === null) return;
+      const content = next.trim();
+      if (!content) throw new Error("动态内容不能为空；如需移除内容，请删除这条动态。");
+      const { error } = await supabase.from("posts").update({ content }).eq("id", card.dataset.post).eq("user_id", shell.user.id);
+      if (error) throw error;
+      if (contentEl) contentEl.textContent = content;
+      else {
+        const el = document.createElement("div");
+        el.className = "post-content";
+        el.textContent = content;
+        card.querySelector(".post-head").after(el);
+      }
+    } else if (action === "delete-post") {
+      if (!confirm("确定删除这条动态吗？此操作无法撤销。")) return;
+      const { error } = await supabase.from("posts").delete().eq("id", card.dataset.post).eq("user_id", shell.user.id);
+      if (error) throw error;
+      card.remove();
+    } else if (action === "delete-comment") {
+      const comment = button.closest("[data-comment]");
+      if (!comment || !confirm("确定删除这条评论吗？")) return;
+      const { error } = await supabase.from("comments").delete().eq("id", comment.dataset.comment).eq("user_id", shell.user.id);
+      if (error) throw error;
+      comment.remove();
+      const count = card.querySelector('[data-action="toggle-comments"] span');
+      if (count) {
+        const value = Math.max(0, Number(count.textContent || 0) - 1);
+        count.textContent = value || "";
+      }
+    }
+  } catch (error) {
+    alert("操作失败：" + (error?.message || error));
+  } finally {
+    button.disabled = false;
+  }
+}
+
     // 点赞和评论展开
     $("#communityPosts").addEventListener(
       "click",
@@ -293,6 +369,11 @@ if (shell) {
         if (!card) return;
 
         const postId = card.dataset.post;
+
+        if (["edit-post","delete-post","delete-comment"].includes(button.dataset.action)) {
+          await handlePostManagement(button, card);
+          return;
+        }
 
         if (button.dataset.action === "toggle-comments") {
           const box = card.querySelector(".comment-list");
@@ -388,6 +469,21 @@ if (shell) {
       }
     );
 
+    $("#communityMembers").addEventListener("click", async event => {
+      const roleButton = event.target.closest("[data-member-role]");
+      const removeButton = event.target.closest("[data-member-remove]");
+      if (!roleButton && !removeButton) return;
+      const target = roleButton ? roleButton.dataset.memberRole : removeButton.dataset.memberRemove;
+      if (!canManageMembers || target === community.owner_id || target === shell.user.id) return;
+      const button = roleButton || removeButton;
+      if (removeButton && !confirm("确定将该成员移出社区吗？")) return;
+      button.disabled = true;
+      const result = roleButton
+        ? await supabase.from("community_members").update({ role: roleButton.dataset.role }).eq("community_id", communityId).eq("user_id", target)
+        : await supabase.from("community_members").delete().eq("community_id", communityId).eq("user_id", target);
+      if (result.error) { alert("管理操作失败：" + result.error.message); button.disabled = false; return; }
+      await loadMembers();
+    });
     // 初始化页面
     await loadCommunity();
   }
