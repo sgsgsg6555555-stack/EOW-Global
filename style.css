@@ -160,3 +160,10 @@ body.eow-feed-page{--eow-bg:#050d1e;--eow-panel:#0b1830;--eow-panel2:#101f3b;--e
 @media(max-width:1180px){.eow-feed-page .eow-global-nav{gap:10px}.eow-feed-page .eow-global-nav>a{font-size:12px}.eow-feed-page .searchbox{flex-basis:190px;min-width:120px}}
 @media(max-width:900px){.eow-feed-page #header .topbar{gap:9px;padding:0 12px}.eow-feed-page .brand{min-width:58px;flex-basis:58px;font-size:22px}.eow-feed-page .eow-global-nav{gap:8px}.eow-feed-page .eow-global-nav>a{gap:3px;font-size:11px}.eow-feed-page .searchbox{flex-basis:150px;min-width:100px}.eow-feed-page .eow-language{font-size:10px}}
 @media(max-width:720px){.eow-feed-page #header .topbar{height:60px}.eow-feed-page .eow-global-nav{height:60px;flex:1;justify-content:space-around;gap:5px}.eow-feed-page .eow-global-nav>a{height:60px}.eow-feed-page .eow-global-nav>a span{display:none}.eow-feed-page .searchbox{display:none}.eow-feed-page .eow-language{margin-left:3px}.eow-feed-page .top-actions .suggestion{display:none}}
+
+/* Blue verified seal with white check, matching the reference */
+.verified-badge{display:inline-flex;align-items:center;justify-content:center;vertical-align:-.2em;width:23px;height:23px;margin-left:5px;flex:0 0 23px;background:transparent!important;border:0!important;border-radius:0!important;color:inherit!important;font-size:0!important;line-height:0;filter:drop-shadow(0 1px 2px rgba(0,92,255,.32))}
+.verified-badge svg{display:block;width:100%;height:100%;overflow:visible}
+.verified-badge .verified-badge-shape{fill:#2478f5;stroke:#398cff;stroke-width:.55}
+.verified-badge .verified-badge-check{fill:none;stroke:#fff;stroke-width:2.8;stroke-linecap:round;stroke-linejoin:round}
+.eow-feed-page .verified-badge{width:24px;height:24px;flex-basis:24px;margin-left:5px}
