@@ -44,15 +44,15 @@ on public.post_reports for select to authenticated
 using (
   exists (
     select 1 from public.eow_admins a
-    where a.user_id = auth.uid() and a.active = true
+    where a.user_id = auth.uid() and a.user_id = auth.uid()
   )
 );
 
 drop policy if exists eow_post_reports_update_admin on public.post_reports;
 create policy eow_post_reports_update_admin
 on public.post_reports for update to authenticated
-using (exists (select 1 from public.eow_admins a where a.user_id = auth.uid() and a.active = true))
-with check (exists (select 1 from public.eow_admins a where a.user_id = auth.uid() and a.active = true));
+using (exists (select 1 from public.eow_admins a where a.user_id = auth.uid() and a.user_id = auth.uid()))
+with check (exists (select 1 from public.eow_admins a where a.user_id = auth.uid() and a.user_id = auth.uid()));
 
 commit;
 
