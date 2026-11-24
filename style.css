@@ -273,3 +273,18 @@ body.eow-feed-page{--eow-bg:#050d1e;--eow-panel:#0b1830;--eow-panel2:#101f3b;--e
  .eow-feed-page .eow-composer-actions #eowEventCreate,
  .eow-feed-page .eow-composer-actions #eowSavedOpen{flex:1 1 calc(50% - 8px);min-width:0!important}
 }
+
+
+/* Global direct-message notifications */
+.eow-message-toasts{position:fixed;right:22px;bottom:22px;z-index:9980;display:grid;gap:10px;width:min(360px,calc(100vw - 28px));pointer-events:none}
+.eow-message-toast{pointer-events:auto;display:flex;align-items:center;gap:12px;padding:13px 14px;background:#fff;border:1px solid #dce5f5;border-radius:16px;box-shadow:0 16px 48px rgba(22,40,80,.2);cursor:pointer;animation:eowToastIn .22s ease-out}
+.eow-message-toast .avatar{flex:0 0 42px}
+.eow-message-toast-copy{flex:1;min-width:0}
+.eow-message-toast-copy strong{display:block;font-size:14px;color:#18243a}
+.eow-message-toast-copy p{margin:3px 0;color:#536078;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.eow-message-toast-copy small{color:#8b97aa;font-size:11px}
+.eow-message-toast-close{background:transparent;color:#8792a5;font-size:20px;padding:0 3px}
+.eow-unread-badge{margin-left:auto;min-width:19px;height:19px;padding:0 6px;border-radius:99px;background:#ef476f;color:#fff;font-size:11px;font-weight:800;display:inline-flex;align-items:center;justify-content:center}
+.eow-chat-call-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+@keyframes eowToastIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:700px){.eow-message-toasts{right:12px;bottom:12px}.eow-message-toast{padding:11px}.eow-chat-call-actions{width:100%}}
