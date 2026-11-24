@@ -4,8 +4,8 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 export const $ = (s, root=document) => root.querySelector(s);
 export const $$ = (s, root=document) => [...root.querySelectorAll(s)];
 export const esc = (v="") => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-export const displayName = p => p?.display_name || p?.username || "EOW 用户";
-export const verifiedBadgeHTML = p => p?.is_verified ? '<span class="verified-badge" title="已认证账号" aria-label="已认证账号">V</span>' : "";
+export const displayName = p => p?.display_name || p?.username || (document.documentElement.lang==="en"?"EOW user":"EOW 用户");
+export const verifiedBadgeHTML = p => p?.is_verified ? `<span class="verified-badge" title="${document.documentElement.lang==="en"?"Verified account":"已认证账号"}" aria-label="${document.documentElement.lang==="en"?"Verified account":"已认证账号"}">V</span>` : "";
 export const avatarHTML = (p, cls="avatar") => p?.avatar_url
   ? `<img class="${cls}" src="${esc(p.avatar_url)}" alt="头像" loading="lazy" onerror="this.style.display='none'">`
   : `<span class="${cls} avatar-fallback" aria-label="默认头像">E</span>`;
