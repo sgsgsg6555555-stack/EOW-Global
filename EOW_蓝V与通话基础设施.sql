@@ -15,9 +15,27 @@ alter table public.eow_verification_applications
   add column if not exists admin_note text,
   add column if not exists proof_url text;
 
-create unique index if not exists eow_one_pending_verification_per_user
-  on public.eow_verification_applications(user_id)
-  where status = 'pending';
+create index if not exists eow_verification_user_status_created_idx
+  on public.eow_verification_applications(user_id, status, created_at desc);
+
+-- 不清理历史申请；使用事务级用户锁阻止未来重复待审申请。
+create or replace function public.eow_prevent_duplicate_pending_verification()
+returns trigger language plpgsql set search_path = '' as $
+begin
+  if new.status = 'pending' then
+    perform pg_advisory_xact_lock(hashtext(new.user_id::text));
+    if exists (select 1 from public.eow_verification_applications a
+               where a.user_id = new.user_id and a.status = 'pending') then
+      raise exception 'You already have a pending verification application';
+    end if;
+  end if;
+  return new;
+end;
+$;
+drop trigger if exists eow_prevent_duplicate_pending_verification on public.eow_verification_applications;
+create trigger eow_prevent_duplicate_pending_verification
+before insert or update of status, user_id on public.eow_verification_applications
+for each row execute function public.eow_prevent_duplicate_pending_verification();
 
 -- 普通用户不能通过 profiles 自更新给自己添加/移除蓝 V。
 create or replace function public.eow_guard_profile_verification()
