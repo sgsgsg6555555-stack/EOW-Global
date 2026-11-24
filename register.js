@@ -1,4 +1,4 @@
-﻿import {supabase,$,setNotice} from "./shared.js?v=4";
+﻿import {supabase,$,setNotice} from "./shared.js?v=5";
 
 if (window.__eowRegisterHandlerInstalled) throw new Error("EOW register handler already installed");
 window.__eowRegisterHandlerInstalled = true;
