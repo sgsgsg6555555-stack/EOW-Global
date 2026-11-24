@@ -48,3 +48,6 @@
 
 /* Conversation unread badges */
 .conversation-item .count-pill{flex:0 0 auto;min-width:22px;text-align:center}.bubble time{display:block;margin-top:5px;font-size:10px;opacity:.72}
+
+/* Verified account V marker */
+.verified-badge{display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;width:20px;height:20px;margin-left:3px;border-radius:50%;background:#2563eb;color:#fff;font-size:12px;font-weight:800;line-height:1;flex:0 0 20px}
