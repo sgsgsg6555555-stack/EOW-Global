@@ -88,7 +88,7 @@ $("#forgotPassword").addEventListener("click", async () => {
   const resetButton = $("#forgotPassword");
   resetButton.disabled = true;
   try {
-    const redirectTo = new URL("reset-password.html", location.href).href;
+    const redirectTo = "https://sgsgsg6555555-stack.github.io/EOW-Global/reset-password.html";
     const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
     if (error) throw error;
     setNotice($("#message"), "如果该邮箱已注册，系统会发送密码重置邮件。请检查收件箱和垃圾邮件。", "success");
