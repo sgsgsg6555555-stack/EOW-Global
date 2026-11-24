@@ -1,4 +1,4 @@
-﻿import {supabase,$,initShell,shellHeader,avatarHTML,displayName,getProfiles,postCard,setNotice} from "./shared.js?v=6";
+﻿import {supabase,$,initShell,shellHeader,avatarHTML,displayName,getProfiles,postCard,setNotice,esc} from "./shared.js?v=6";
 const shell=await initShell("home");if(shell){
 $("#composerAvatar").innerHTML=avatarHTML(shell.profile);
 $("#postMedia").addEventListener("change",e=>$("#mediaName").textContent=e.target.files[0]?.name||"支持图片或视频，单个文件最大 30MB");
@@ -72,8 +72,26 @@ if(btn.dataset.action==="like"){btn.disabled=true;try{const {data:existing,error
 });
 $("#feed").addEventListener("submit",async e=>{if(!e.target.matches(".comment-form"))return;e.preventDefault();const postId=e.target.closest("[data-post]").dataset.post;const input=e.target.elements.content;const content=input.value.trim();if(!content)return;const submit=e.target.querySelector("button");submit.disabled=true;const {error}=await supabase.from("comments").insert({post_id:postId,user_id:shell.user.id,content,created_at:new Date().toISOString()});if(error)alert("评论失败："+error.message);else{const row=document.createElement("div");row.className="comment";row.innerHTML=`<strong>${displayName(shell.profile)}</strong>`;row.append(document.createTextNode(content));e.target.before(row);input.value="";}submit.disabled=false;});
 $("#loadMore").addEventListener("click",()=>loadFeed());
+async function loadTrending(){
+ const box=$("#trendingPosts");if(!box)return;
+ const {data,error}=await supabase.from("posts").select("id,content,created_at").order("created_at",{ascending:false}).limit(60);
+ if(error){box.textContent="暂时无法加载热门动态";return;}
+ const rows=data||[];if(!rows.length){box.innerHTML='<div class="muted">还没有热门内容，来发布第一条动态吧。</div>';return;}
+ const ids=rows.map(x=>x.id);const [likes,comments]=await Promise.all([supabase.from("likes").select("post_id").in("post_id",ids),supabase.from("comments").select("post_id").in("post_id",ids)]);
+ const score={};(likes.data||[]).forEach(x=>score[x.post_id]=(score[x.post_id]||0)+1);(comments.data||[]).forEach(x=>score[x.post_id]=(score[x.post_id]||0)+2);
+ rows.sort((a,b)=>(score[b.id]||0)-(score[a.id]||0));
+ box.innerHTML=rows.slice(0,5).map((p,i)=>'<a class="trending-item" href="#feed" data-trend="'+esc(p.id)+'"><span class="trend-number">'+(i+1)+'</span><span class="trend-copy"><strong>'+esc((p.content||"分享了一张图片").slice(0,46))+'</strong><small>'+(score[p.id]||0)+' 次互动 · '+new Date(p.created_at).toLocaleDateString()+'</small></span></a>').join("");
+ box.querySelectorAll("[data-trend]").forEach(a=>a.addEventListener("click",()=>{const card=document.querySelector('[data-post="'+a.dataset.trend+'"]');card?.scrollIntoView({behavior:"smooth",block:"center"});}));
+}
+async function loadInvite(){
+ const box=$("#inviteCode");if(!box)return;
+ const {data,error}=await supabase.from("profiles").select("invite_code").eq("id",shell.user.id).maybeSingle();
+ if(error||!data?.invite_code){box.textContent="邀请功能部署后开放";$("#copyInvite").disabled=true;return;}
+ const url=new URL("register.html",location.href);url.searchParams.set("invite",data.invite_code);
+ box.textContent=data.invite_code;$("#copyInvite").onclick=async()=>{try{await navigator.clipboard.writeText(url.href);$("#inviteNotice").textContent="邀请链接已复制，可以分享给朋友。";}catch{$("#inviteNotice").textContent=url.href;}};
+}
 async function suggestions(){const {data,error}=await supabase.from("profiles").select("id,username,display_name,avatar_url,bio").neq("id",shell.user.id).limit(4);if(error){$("#suggestions").textContent="暂时无法加载推荐用户";return;}$("#suggestions").innerHTML=(data||[]).map(p=>`<div class="suggestion">${avatarHTML(p)}<div class="grow"><strong>${displayName(p)}</strong><small>${p.username?"@"+p.username:"EOW 成员"}</small></div><a class="btn secondary small" href="profile.html?id=${encodeURIComponent(p.id)}">查看</a></div>`).join("")||"暂时没有其他成员";}
-await Promise.all([loadFeed(true),suggestions()]);
+await Promise.all([loadFeed(true),suggestions(),loadTrending(),loadInvite()]);
 }
 
 
