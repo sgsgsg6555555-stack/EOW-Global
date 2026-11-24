@@ -3,7 +3,7 @@ import { supabase, $, setNotice } from "./shared.js?v=6";
 const form = $("#registerForm");
 let mode = "email";
 let pendingPhone = "";
-let pendingPassword = "";
+
 let busy = false;
 
 function showMessage(message, type = "") { setNotice($("#message"), message, type); }
@@ -63,7 +63,7 @@ form.addEventListener("submit", async event => {
       const phone = $("#phone").value.trim().replace(/[\s()-]/g, "");
       if (!validE164(phone)) throw new Error("手机号码格式不正确，请使用国际格式，例如 +60123456789。");
       pendingPhone = phone;
-      pendingPassword = password;
+
       const { data, error } = await supabase.auth.signUp({
         phone, password,
         options: { channel: "sms" }
@@ -105,14 +105,11 @@ $("#verifyButton").addEventListener("click", async () => {
 });
 
 $("#resendButton").addEventListener("click", async () => {
-  if (!pendingPhone || !pendingPassword) return;
+  if (!pendingPhone) return;
   const button = $("#resendButton");
   button.disabled = true;
   try {
-    const { error } = await supabase.auth.signInWithOtp({
-      phone: pendingPhone,
-      options: { shouldCreateUser: false }
-    });
+    const { error } = await supabase.auth.resend({ type: "sms", phone: pendingPhone });
     if (error) throw error;
     showMessage("已请求重新发送验证码，请查看短信。", "success");
   } catch (error) {
