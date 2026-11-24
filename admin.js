@@ -1,4 +1,4 @@
-﻿import {supabase,$,esc,avatarHTML,displayName,setNotice,shellHeader} from "./shared.js?v=4";
+﻿import {supabase,$,esc,avatarHTML,displayName,setNotice,shellHeader} from "./shared.js?v=5";
 if($("#header")) $("#header").innerHTML=shellHeader();
 const {data:{user},error:userError}=await supabase.auth.getUser();
 if(userError||!user){location.href="login.html?next="+encodeURIComponent("/admin.html");}
