@@ -24,7 +24,7 @@ if(shell){
     try{profiles={...profiles,...await getProfiles(ids)};}catch(e){console.warn(e);}
     const ordered=ids.map(id=>{
       const thread=allMessages.filter(m=>(m.sender_id===id&&m.receiver_id===shell.user.id)||(m.receiver_id===id&&m.sender_id===shell.user.id));
-      const unread=thread.filter(m=>m.sender_id===id&&m.receiver_id===shell.user.id&&m.read_at==null).length;
+      const unread=readTrackingAvailable?thread.filter(m=>m.sender_id===id&&m.receiver_id===shell.user.id&&m.read_at==null).length:0;
       return {id,latest:thread[0],unread};
     });
     $("#conversations").innerHTML=ordered.map(c=>`<button class="conversation-item ${activeId===c.id?"active":""}" data-user="${esc(c.id)}">${avatarHTML(profiles[c.id])}<span class="grow"><strong>${esc(displayName(profiles[c.id]))}</strong><p class="muted">${esc(c.latest?.content||"")}</p></span>${c.unread?`<span class="count-pill" aria-label="${c.unread} 条未读">${c.unread>99?"99+":c.unread}</span>`:""}</button>`).join("")||'<div class="empty">暂无私信。搜索成员或从个人主页发起聊天。</div>';
