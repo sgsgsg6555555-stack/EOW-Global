@@ -67,7 +67,7 @@ if (shell) {
 
       members = data || [];
 
-      isJoined = members.some(
+      isJoined = community?.owner_id === shell.user.id || members.some(
         m => m.user_id === shell.user.id
       );
 
@@ -81,8 +81,9 @@ if (shell) {
           id="membershipButton"
           class="btn small ${isJoined ? "secondary" : ""}"
           style="margin-left:12px"
+          ${community?.owner_id === shell.user.id ? "disabled" : ""}
         >
-          ${isJoined ? "退出社区" : "加入社区"}
+          ${community?.owner_id === shell.user.id ? "社区创建者" : isJoined ? "退出社区" : "加入社区"}
         </button>
       `;
 
@@ -110,6 +111,7 @@ if (shell) {
 
     // 加入或退出社区
     async function toggleMembership() {
+      if (community?.owner_id === shell.user.id) return;
 
       const button = $("#membershipButton");
       button.disabled = true;
@@ -233,6 +235,9 @@ if (shell) {
     }
 
     // 发布社区动态
+    $("#communityPostForm").querySelectorAll("textarea,button").forEach(el => { el.disabled = !isJoined; });
+    if (!isJoined) setNotice($("#communityPostNotice"), "加入社区后即可发布社区动态。", "");
+
     $("#communityPostForm").addEventListener(
       "submit",
       async e => {
