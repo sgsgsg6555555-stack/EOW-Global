@@ -18,8 +18,56 @@ $("#postForm").addEventListener("submit",async e=>{e.preventDefault();const text
 const btn=$("#publishBtn");btn.disabled=true;btn.textContent="正在发布…";try{let mediaUrl=null,mediaType=null;if(file){const path=`${shell.user.id}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g,"_")}`;const {error:upErr}=await supabase.storage.from("posts").upload(path,file,{upsert:false,contentType:file.type});if(upErr)throw upErr;mediaUrl=supabase.storage.from("posts").getPublicUrl(path).data.publicUrl;mediaType=file.type.startsWith("video/")?"video":"image";}
 const {error}=await supabase.from("posts").insert({user_id:shell.user.id,content:text,media_url:mediaUrl,media_type:mediaType,created_at:new Date().toISOString()});if(error)throw error;$("#postText").value="";$("#postMedia").value="";$("#mediaName").textContent="支持图片或视频，单个文件最大 30MB";setNotice($("#postNotice"),"发布成功！","success");await loadFeed(true);
 }catch(err){setNotice($("#postNotice"),"发布失败："+err.message,"error");}finally{btn.disabled=false;btn.textContent="发布动态";}});
+async function handlePostManagement(button, card) {
+  const action = button.dataset.action;
+  button.disabled = true;
+  try {
+    if (action === "edit-post") {
+      const contentEl = card.querySelector(".post-content");
+      const current = contentEl?.textContent || "";
+      const next = prompt("编辑动态内容：", current);
+      if (next === null) return;
+      const content = next.trim();
+      if (!content) throw new Error("动态内容不能为空；如需移除内容，请删除这条动态。");
+      const { error } = await supabase.from("posts").update({ content }).eq("id", card.dataset.post).eq("user_id", shell.user.id);
+      if (error) throw error;
+      if (contentEl) contentEl.textContent = content;
+      else {
+        const el = document.createElement("div");
+        el.className = "post-content";
+        el.textContent = content;
+        card.querySelector(".post-head").after(el);
+      }
+    } else if (action === "delete-post") {
+      if (!confirm("确定删除这条动态吗？此操作无法撤销。")) return;
+      const { error } = await supabase.from("posts").delete().eq("id", card.dataset.post).eq("user_id", shell.user.id);
+      if (error) throw error;
+      card.remove();
+    } else if (action === "delete-comment") {
+      const comment = button.closest("[data-comment]");
+      if (!comment || !confirm("确定删除这条评论吗？")) return;
+      const { error } = await supabase.from("comments").delete().eq("id", comment.dataset.comment).eq("user_id", shell.user.id);
+      if (error) throw error;
+      comment.remove();
+      const count = card.querySelector('[data-action="toggle-comments"] span');
+      if (count) {
+        const value = Math.max(0, Number(count.textContent || 0) - 1);
+        count.textContent = value || "";
+      }
+    }
+  } catch (error) {
+    alert("操作失败：" + (error?.message || error));
+  } finally {
+    button.disabled = false;
+  }
+}
+
 $("#feed").addEventListener("click",async e=>{const btn=e.target.closest("button[data-action]");if(!btn)return;const card=btn.closest("[data-post]");const postId=card.dataset.post;
-if(btn.dataset.action==="toggle-comments"){const box=card.querySelector(".comment-list");box.hidden=!box.hidden;return;}
+if (["edit-post","delete-post","delete-comment"].includes(btn.dataset.action)) {
+  await handlePostManagement(btn, card);
+  return;
+ }
+ if(btn.dataset.action==="toggle-comments"){const box=card.querySelector(".comment-list");box.hidden=!box.hidden;return;}
 if(btn.dataset.action==="like"){btn.disabled=true;try{const {data:existing,error:findErr}=await supabase.from("likes").select("id").eq("post_id",postId).eq("user_id",shell.user.id).maybeSingle();if(findErr)throw findErr;if(existing){const {error}=await supabase.from("likes").delete().eq("id",existing.id);if(error)throw error;btn.classList.remove("liked");btn.querySelector("span").textContent="点赞";}else{const {error}=await supabase.from("likes").insert({post_id:postId,user_id:shell.user.id,created_at:new Date().toISOString()});if(error)throw error;btn.classList.add("liked");btn.querySelector("span").textContent="已赞";}}catch(err){alert("点赞操作失败："+err.message);}finally{btn.disabled=false;}}
 });
 $("#feed").addEventListener("submit",async e=>{if(!e.target.matches(".comment-form"))return;e.preventDefault();const postId=e.target.closest("[data-post]").dataset.post;const input=e.target.elements.content;const content=input.value.trim();if(!content)return;const submit=e.target.querySelector("button");submit.disabled=true;const {error}=await supabase.from("comments").insert({post_id:postId,user_id:shell.user.id,content,created_at:new Date().toISOString()});if(error)alert("评论失败："+error.message);else{const row=document.createElement("div");row.className="comment";row.innerHTML=`<strong>${displayName(shell.profile)}</strong>`;row.append(document.createTextNode(content));e.target.before(row);input.value="";}submit.disabled=false;});
