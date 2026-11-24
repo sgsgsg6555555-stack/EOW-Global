@@ -208,3 +208,26 @@ body.eow-feed-page{--eow-bg:#050d1e;--eow-panel:#0b1830;--eow-panel2:#101f3b;--e
 }
 .verified-badge .verified-badge-shape{fill:#1687f8!important;stroke:none!important}
 .verified-badge .verified-badge-check{fill:none!important;stroke:#fff!important;stroke-width:3!important;stroke-linecap:round!important;stroke-linejoin:round!important}
+
+
+/* Feed: keep the complete global toolbar visible during page scroll */
+.eow-feed-page #header{position:sticky;top:0;z-index:120;isolation:isolate}
+.eow-feed-page #header .topbar{position:relative!important;top:auto!important;z-index:121!important}
+
+/* Feed engagement row and reference-style interaction controls */
+.eow-feed-page .eow-post-stats{display:flex;align-items:center;gap:22px;padding:12px 0 10px;margin-top:8px;color:#8fa6c9;font-size:12px}
+.eow-feed-page .eow-post-stats>span{display:inline-flex;align-items:center;gap:5px}
+.eow-feed-page .eow-post-stats b{color:#d7e5fb;font-weight:750;font-variant-numeric:tabular-nums}
+.eow-feed-page .eow-post-stats .eow-stat-like{color:#ff6b91}
+.eow-feed-page .eow-stat-comments svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.eow-feed-page .eow-post-actions{display:flex;align-items:center;gap:9px;border-top:1px solid #1d3152;padding-top:10px;margin-top:0}
+.eow-feed-page .eow-post-actions .action{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:36px;padding:8px 12px;border:1px solid transparent;border-radius:10px;background:transparent;color:#a9bddb;font-size:13px;font-weight:650;line-height:1.15;white-space:nowrap;transition:background .18s ease,border-color .18s ease,color .18s ease,transform .18s ease}
+.eow-feed-page .eow-post-actions .action-icon{width:16px;height:16px;display:block;flex:0 0 16px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.eow-feed-page .eow-post-actions .heart-icon{fill:currentColor;stroke:currentColor;stroke-width:1}
+.eow-feed-page .eow-post-actions .eow-like-action{background:#3b2038;border-color:#563047;color:#ff6b91}
+.eow-feed-page .eow-post-actions .eow-like-action:hover,.eow-feed-page .eow-post-actions .eow-like-action.liked{background:#59233f;border-color:#8b365a;color:#ff709b;box-shadow:0 4px 14px #ff4f8b20}
+.eow-feed-page .eow-post-actions .eow-comment-action:hover,.eow-feed-page .eow-post-actions .eow-share-action:hover,.eow-feed-page .eow-post-actions .eow-save-action:hover{background:#172d50;border-color:#29466f;color:#e6f0ff}
+.eow-feed-page .eow-post-actions .eow-save-action.saved{background:#142b4c;border-color:#28528b;color:#70b5ff}
+.eow-feed-page .eow-post-actions .action:active{transform:translateY(1px)}
+.eow-feed-page .eow-post-actions .action:disabled{opacity:.6;cursor:wait}
+@media(max-width:720px){.eow-feed-page .eow-post-stats{gap:16px}.eow-feed-page .eow-post-actions{gap:6px}.eow-feed-page .eow-post-actions .action{padding:8px 9px;font-size:12px}}
