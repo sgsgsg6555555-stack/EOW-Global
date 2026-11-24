@@ -83,6 +83,7 @@ export async function initCallUI(user, supabase) {
       if(!current||payload?.sender_id===user.id)return;
       try{
         if(payload.event==="ready"&&current.role==="caller"){
+          if(ringTimer)clearTimeout(ringTimer);ringTimer=null;
           const offer=await pc.createOffer();await pc.setLocalDescription(offer);await send("offer",{description:pc.localDescription});
         }else if(payload.event==="offer"&&current.role==="callee"){
           await pc.setRemoteDescription(payload.description);
@@ -124,6 +125,7 @@ export async function initCallUI(user, supabase) {
   const acceptCall=async()=>{
     if(!current||current.role!=="callee")return;
     const call=current;
+    if(ringTimer)clearTimeout(ringTimer);ringTimer=null;
     try{
       await ensureMedia(call.type);
       const {error}=await supabase.rpc("eow_respond_call",{p_call_id:call.id,p_response:"accepted"});
