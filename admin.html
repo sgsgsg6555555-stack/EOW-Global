@@ -32,6 +32,7 @@
 .admin-detail-item{background:#f8fafc;border:1px solid #e5eaf4;border-radius:10px;padding:12px;overflow-wrap:anywhere}
 .admin-detail-item small{display:block;color:#64748b;margin-bottom:5px}
 @media(max-width:520px){.admin-detail-grid{grid-template-columns:1fr}}
+.admin-growth-chart{display:grid;grid-template-columns:repeat(14,minmax(0,1fr));gap:8px;align-items:end;min-height:190px;padding:12px 4px}.admin-growth-day{display:flex;flex-direction:column;align-items:center;justify-content:end;gap:5px;min-width:0;height:180px}.admin-growth-bars{height:140px;width:100%;display:flex;align-items:end;justify-content:center;gap:3px;border-bottom:1px solid #e5eaf4}.admin-growth-bar{width:38%;min-width:4px;border-radius:5px 5px 0 0;background:#5577e8}.admin-growth-bar.active{background:#22b8b5}.admin-growth-day small{font-size:10px;color:#64748b;white-space:nowrap}.admin-growth-legend{display:flex;gap:16px;flex-wrap:wrap;color:#64748b;font-size:12px;margin:8px 0}.admin-growth-dot{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:5px}
 @media(max-width:800px){.admin-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-wrap{padding:0 12px}}
 @media(max-width:480px){.admin-grid{grid-template-columns:1fr}.admin-head,.admin-panel{padding:14px}}
 </style>
@@ -46,10 +47,17 @@
 <div id="adminApp" hidden>
  <section class="admin-grid" id="stats" aria-label="平台数据概览"></section>
  <nav class="admin-nav" aria-label="后台模块">
-  <button class="active" data-tab="users">用户管理</button><button data-tab="posts">动态管理</button>
+  <button class="active" data-tab="users">用户管理</button><button data-tab="growth">增长分析</button><button data-tab="posts">动态管理</button>
   <button data-tab="verifications">蓝 V 审核</button><button data-tab="reports">举报管理</button>
   <button data-tab="gifts">礼物目录</button><button data-tab="finance">充值订单</button><button data-tab="wallets">钱包概览</button>
  </nav>
+ <section class="admin-panel" id="tab-growth" hidden>
+  <div class="admin-head-row"><div><h2 class="section-title">用户增长分析</h2><p class="admin-note">统计注册、活跃、留存和注册来源。活跃数据从本功能上线后开始累计。</p></div><button class="btn secondary small" id="refreshGrowth" type="button">刷新数据</button></div>
+  <div id="growthStatus" class="admin-status">等待加载分析数据…</div>
+  <div class="admin-grid" id="growthStats"></div>
+  <div class="admin-panel"><h3 class="section-title">最近 14 天注册与活跃趋势</h3><div id="growthChart" class="admin-growth-chart"></div><p class="admin-note">活跃用户按当日产生过页面访问记录的去重账号计算；数据为产品内观测值。</p></div>
+  <div class="admin-panel"><h3 class="section-title">注册来源</h3><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>来源</th><th>注册数</th></tr></thead><tbody id="growthSources"></tbody></table></div></div>
+ </section>
  <section class="admin-panel" id="tab-users"><h2 class="section-title">用户管理</h2><input class="field admin-search" id="userSearch" placeholder="按用户名搜索"><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>用户</th><th>用户名</th><th>用户 ID</th><th>注册时间</th><th>详情</th></tr></thead><tbody id="usersBody"></tbody></table></div></section>
  <section class="admin-panel" id="tab-posts" hidden><h2 class="section-title">动态管理</h2><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>作者 ID</th><th>内容</th><th>媒体类型</th><th>发布时间</th></tr></thead><tbody id="postsBody"></tbody></table></div></section>
  <section class="admin-panel" id="tab-verifications" hidden><h2 class="section-title">蓝 V 认证申请</h2><p class="admin-note">管理员可在此审核申请；审核通过后系统会同步给用户资料添加蓝 V 标识。</p><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>申请人</th><th>认证理由</th><th>证明链接</th><th>状态</th><th>提交时间</th><th>审核操作</th></tr></thead><tbody id="verificationBody"></tbody></table></div></section>
