@@ -1,4 +1,4 @@
-import {supabase,$,esc,avatarHTML,displayName,shellHeader,getProfiles} from "./shared.js?v=20";
+import {supabase,$,esc,avatarHTML,displayName,shellHeader,getProfiles} from "./shared.js?v=21";
 
 if($("#header")) $("#header").innerHTML=shellHeader();
 const status=$("#adminStatus");
