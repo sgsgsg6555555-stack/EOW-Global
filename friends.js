@@ -1,4 +1,4 @@
-﻿import {supabase,$,initShell,getProfiles,avatarHTML,displayName,esc} from "./shared.js?v=4";
+﻿import {supabase,$,initShell,getProfiles,avatarHTML,displayName,esc} from "./shared.js?v=5";
 const shell=await initShell("friends");if(shell){let rows=[],profiles={},tab="friends";
  async function load(){$("#friendsStatus").textContent="正在加载…";const {data,error}=await supabase.from("friendships").select("id,requester_id,addressee_id,status,created_at").or(`requester_id.eq.${shell.user.id},addressee_id.eq.${shell.user.id}`).order("created_at",{ascending:false});if(error){$("#friendsStatus").textContent="好友列表读取失败："+error.message;return;}rows=data||[];profiles=await getProfiles(rows.flatMap(r=>[r.requester_id,r.addressee_id]));$("#incomingCount").textContent=rows.filter(r=>r.status==="pending"&&r.addressee_id===shell.user.id).length;render();}
  function render(){const filtered=rows.filter(r=>tab==="friends"?r.status==="accepted":tab==="incoming"?r.status==="pending"&&r.addressee_id===shell.user.id:r.status==="pending"&&r.requester_id===shell.user.id);$("#friendsStatus").textContent=`${tab==="friends"?"好友":tab==="incoming"?"收到的申请":"发出的申请"}：${filtered.length}`;
