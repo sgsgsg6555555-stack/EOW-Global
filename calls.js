@@ -66,7 +66,7 @@ export async function initCallUI(user, supabase, onIncoming = null) {
   };
   const createPeer=()=>{
     pc=new RTCPeerConnection({iceServers:ICE_SERVERS});
-    remoteStream=new MediaStream();remoteVideo.srcObject=remoteStream;remoteAudio.srcObject=remoteStream;
+    remoteStream=new MediaStream();remoteVideo.srcObject=remoteStream;remoteAudio.srcObject=current?.type==="video"?null:remoteStream;
     for(const track of localStream.getTracks())pc.addTrack(track,localStream);
     pc.ontrack=e=>{for(const track of e.streams[0]?.getTracks()||[e.track])remoteStream.addTrack(track);};
     pc.onicecandidate=e=>{if(e.candidate)send("ice",{candidate:e.candidate.toJSON()}).catch(err=>setStatus(err.message));};
