@@ -222,7 +222,8 @@ if (shell) {
           p,
           profiles[p.user_id],
           liked,
-          cs
+          cs,
+          shell.user.id
         );
 
       }).join("");
