@@ -231,3 +231,45 @@ body.eow-feed-page{--eow-bg:#050d1e;--eow-panel:#0b1830;--eow-panel2:#101f3b;--e
 .eow-feed-page .eow-post-actions .action:active{transform:translateY(1px)}
 .eow-feed-page .eow-post-actions .action:disabled{opacity:.6;cursor:wait}
 @media(max-width:720px){.eow-feed-page .eow-post-stats{gap:16px}.eow-feed-page .eow-post-actions{gap:6px}.eow-feed-page .eow-post-actions .action{padding:8px 9px;font-size:12px}}
+
+
+/* Composer feature buttons: match the primary Publish button */
+.eow-feed-page .eow-composer-actions #publishBtn,
+.eow-feed-page .eow-composer-actions #eowPollCreate,
+.eow-feed-page .eow-composer-actions #eowEventCreate,
+.eow-feed-page .eow-composer-actions #eowSavedOpen{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:8px!important;
+  min-width:96px!important;
+  min-height:44px!important;
+  padding:0 16px!important;
+  border:1px solid #2878ff!important;
+  border-radius:11px!important;
+  background:linear-gradient(135deg,#1768f5 0%,#1748d5 100%)!important;
+  color:#fff!important;
+  font-size:14px!important;
+  font-weight:750!important;
+  line-height:1!important;
+  box-shadow:0 6px 18px rgba(24,91,235,.2)!important;
+  transition:transform .18s ease,filter .18s ease,box-shadow .18s ease!important;
+}
+.eow-feed-page .eow-composer-actions #publishBtn:hover,
+.eow-feed-page .eow-composer-actions #eowPollCreate:hover,
+.eow-feed-page .eow-composer-actions #eowEventCreate:hover,
+.eow-feed-page .eow-composer-actions #eowSavedOpen:hover{
+  filter:brightness(1.1)!important;
+  box-shadow:0 8px 22px rgba(24,91,235,.32)!important;
+  transform:translateY(-1px);
+}
+.eow-feed-page .eow-composer-actions #publishBtn:active,
+.eow-feed-page .eow-composer-actions #eowPollCreate:active,
+.eow-feed-page .eow-composer-actions #eowEventCreate:active,
+.eow-feed-page .eow-composer-actions #eowSavedOpen:active{transform:translateY(0)}
+@media(max-width:720px){
+ .eow-feed-page .eow-composer-actions #publishBtn,
+ .eow-feed-page .eow-composer-actions #eowPollCreate,
+ .eow-feed-page .eow-composer-actions #eowEventCreate,
+ .eow-feed-page .eow-composer-actions #eowSavedOpen{flex:1 1 calc(50% - 8px);min-width:0!important}
+}
