@@ -120,7 +120,7 @@ export async function initCallUI(user, supabase) {
       pc=createPeer();
       await send("ringing",{call_type:type});
       ringTimer=setTimeout(async()=>{if(current?.id===callId){try{await supabase.rpc("eow_end_call",{p_call_id:callId,p_reason:"missed"});}catch{}await cleanup();}},45000);
-    }catch(err){await cleanup();throw err;}
+    }catch(err){if(current?.id){try{await supabase.rpc("eow_end_call",{p_call_id:current.id,p_reason:"failed"});}catch{}}await cleanup();throw err;}
   };
   const acceptCall=async()=>{
     if(!current||current.role!=="callee")return;
@@ -164,6 +164,7 @@ export async function initCallUI(user, supabase) {
   };
   const inbound=supabase.channel("eow-incoming-calls:"+user.id)
     .on("postgres_changes",{event:"INSERT",schema:"public",table:"eow_calls",filter:"callee_id=eq."+user.id},payload=>incoming(payload.new))
+    .on("postgres_changes",{event:"UPDATE",schema:"public",table:"eow_calls",filter:"callee_id=eq."+user.id},payload=>{if(current?.id===payload.new.id&&!["ringing","accepted"].includes(payload.new.status)){setStatus("来电已结束");cleanup();}})
     .subscribe();
   try{
     await supabase.rpc("eow_expire_incoming_calls");
