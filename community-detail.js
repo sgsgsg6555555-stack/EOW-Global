@@ -73,7 +73,7 @@ if (shell) {
 
       const mine = members.find(m => m.user_id === shell.user.id);
       isOwner = community?.owner_id === shell.user.id;
-      canManageMembers = isOwner || mine?.role === "moderator";
+      canManageMembers = isOwner;
       isJoined = isOwner || !!mine;
 
       let profiles = {};
