@@ -138,7 +138,7 @@ export async function initCallUI(user, supabase, onIncoming = null) {
   const rejectCall=async()=>{
     if(!current)return;
     const call=current;
-    try{await supabase.rpc("eow_respond_call",{p_call_id:call.id,p_response:"rejected"});await send("reject");}catch{}
+    try{await send("reject");await supabase.rpc("eow_respond_call",{p_call_id:call.id,p_response:"rejected"});}catch{}
     await cleanup();
   };
   const endCall=async()=>{
