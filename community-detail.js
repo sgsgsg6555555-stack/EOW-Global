@@ -97,14 +97,14 @@ if (shell) {
           const p = profiles[m.user_id];
           if (!p) return "";
 
-          const roleButton = isOwner && m.user_id !== shell.user.id && m.user_id !== community?.owner_id ? `<button class="btn ghost small" data-member-role="${m.user_id}" data-role="${m.role === "moderator" ? "member" : "moderator"}">${m.role === "moderator" ? "取消管理员" : "设为管理员"}</button>` : "";
+          const roleButton = isOwner && m.user_id !== shell.user.id && m.user_id !== community?.owner_id ? `<button class="btn ghost small" data-member-role="${m.user_id}" data-role="${m.role === "admin" ? "member" : "admin"}">${m.role === "admin" ? "取消管理员" : "设为管理员"}</button>` : "";
           const removeButton = canManageMembers && m.user_id !== shell.user.id && m.user_id !== community?.owner_id ? `<button class="btn ghost small" data-member-remove="${m.user_id}">移除</button>` : "";
           return `
             <div class="suggestion">
               ${avatarHTML(p)}
               <div class="grow">
                 <strong>${displayName(p)}</strong>
-                <small>${m.role === "owner" ? "社区创建者" : m.role === "moderator" ? "社区管理员" : "社区成员"}</small>
+                <small>${m.role === "owner" ? "社区创建者" : m.role === "admin" ? "社区管理员" : "社区成员"}</small>
               </div>
               <div class="admin-actions">${roleButton}${removeButton}</div>
             </div>
