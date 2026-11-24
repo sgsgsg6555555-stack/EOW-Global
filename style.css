@@ -99,7 +99,7 @@ body.eow-feed-page{--eow-bg:#050d1e;--eow-panel:#0b1830;--eow-panel2:#101f3b;--e
 .eow-composer-actions{flex-wrap:wrap}
 .eow-tool-btn{display:inline-flex;align-items:center;gap:7px;border:1px solid #253958;background:#101f38;color:#dbe8ff;padding:9px 12px;border-radius:11px;font-weight:650}
 .eow-tool-btn:hover,.eow-mini-action:hover{border-color:#287cff;color:#fff;background:#12366a}
-.eow-action.saved{color:#55a8ff}
+.action.saved{color:#55a8ff}
 .eow-poll{margin:14px 0;padding:15px;border:1px solid #243b60;border-radius:14px;background:#0a1930}
 .eow-poll-title{font-weight:750;margin-bottom:10px}.eow-poll-title span,.eow-poll small{color:#91a6c6;font-size:12px}
 .eow-poll-option{position:relative;overflow:hidden;width:100%;display:flex;justify-content:space-between;gap:12px;margin:8px 0;padding:11px 12px;border:1px solid #2a4267;border-radius:10px;background:#10213b;color:#eaf2ff;text-align:left}
