@@ -5,7 +5,7 @@ export const $ = (s, root=document) => root.querySelector(s);
 export const $$ = (s, root=document) => [...root.querySelectorAll(s)];
 export const esc = (v="") => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 export const displayName = p => p?.display_name || p?.username || (document.documentElement.lang==="en"?"EOW user":"EOW 用户");
-export const verifiedBadgeHTML = p => p?.is_verified ? `<span class="verified-badge" title="${document.documentElement.lang==="en"?"Verified account":"已认证账号"}" aria-label="${document.documentElement.lang==="en"?"Verified account":"已认证账号"}">V</span>` : "";
+export const verifiedBadgeHTML = p => p?.is_verified ? `<span class="verified-badge" title="${document.documentElement.lang==="en"?"Verified account":"已认证账号"}" aria-label="${document.documentElement.lang==="en"?"Verified account":"已认证账号"}"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path class="verified-badge-shape" d="M12 1.35 14.55 2.55 17.35 2.2 18.7 4.7 21.25 6.15 20.95 8.95 22.35 11.35 20.95 13.75 21.25 16.55 18.7 18 17.35 20.5 14.55 20.15 12 21.35 9.45 20.15 6.65 20.5 5.3 18 2.75 16.55 3.05 13.75 1.65 11.35 3.05 8.95 2.75 6.15 5.3 4.7 6.65 2.2 9.45 2.55Z"/><path class="verified-badge-check" d="m7.5 12.15 2.9 2.85 6.2-6.3"/></svg></span>` : "";
 export const avatarHTML = (p, cls="avatar") => p?.avatar_url
   ? `<img class="${cls}" src="${esc(p.avatar_url)}" alt="头像" loading="lazy" onerror="this.style.display='none'">`
   : `<span class="${cls} avatar-fallback" aria-label="默认头像">E</span>`;
