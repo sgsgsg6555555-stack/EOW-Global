@@ -20,6 +20,8 @@ if (shell) {
   let community = null;
   let members = [];
   let isJoined = false;
+  let canManageMembers = false;
+  let isOwner = false;
   $("#communityPostForm").querySelectorAll("textarea,button").forEach(el => { el.disabled = true; });
 
   if (!communityId) {
@@ -48,6 +50,7 @@ if (shell) {
       $("#communityName").textContent = community.name;
       $("#communityDescription").textContent =
         community.description || "欢迎来到这个社区！";
+      renderAnnouncement();
 
       await Promise.allSettled([loadMembers(), loadPosts()]);
     }
@@ -68,9 +71,10 @@ if (shell) {
 
       members = data || [];
 
-      isJoined = community?.owner_id === shell.user.id || members.some(
-        m => m.user_id === shell.user.id
-      );
+      const mine = members.find(m => m.user_id === shell.user.id);
+      isOwner = community?.owner_id === shell.user.id;
+      canManageMembers = isOwner || mine?.role === "moderator";
+      isJoined = isOwner || !!mine;
 
       let profiles = {};
       try { profiles = await getProfiles(members.map(m => m.user_id)); }
@@ -93,12 +97,14 @@ if (shell) {
           const p = profiles[m.user_id];
           if (!p) return "";
 
+          const roleButton = isOwner && m.user_id !== shell.user.id && m.user_id !== community?.owner_id ? `<button class="btn ghost small" data-member-role="${m.user_id}" data-role="${m.role === "moderator" ? "member" : "moderator"}">${m.role === "moderator" ? "取消管理员" : "设为管理员"}</button>` : "";
+          const removeButton = canManageMembers && m.user_id !== shell.user.id && m.user_id !== community?.owner_id ? `<button class="btn ghost small" data-member-remove="${m.user_id}">移除</button>` : "";
           return `
             <div class="suggestion">
               ${avatarHTML(p)}
               <div class="grow">
                 <strong>${displayName(p)}</strong>
-                <small>${m.role === "owner" ? "社区创建者" : "社区成员"}</small>
+                <small>${m.role === "owner" ? "社区创建者" : m.role === "moderator" ? "社区管理员" : "社区成员"}</small>
               </div>
             </div>
           `;
@@ -108,6 +114,27 @@ if (shell) {
       $("#communityPostForm").querySelectorAll("textarea,button").forEach(el => { el.disabled = !isJoined; });
       if (!isJoined) setNotice($("#communityPostNotice"), "加入社区后即可发布社区动态。", "");
       else setNotice($("#communityPostNotice"), "", "");
+    }
+
+    function renderAnnouncement() {
+      const host = $("#communityAnnouncement");
+      if (!host) return;
+      const p = document.createElement("p");
+      p.textContent = community?.announcement || "暂无公告";
+      host.replaceChildren();
+      const heading = document.createElement("h2"); heading.textContent = "社区公告"; host.append(heading, p);
+      if (community?.owner_id === shell.user.id) {
+        const button = document.createElement("button"); button.className = "btn secondary small"; button.textContent = "编辑公告";
+        button.addEventListener("click", async () => {
+          const value = prompt("编辑社区公告（最多 1000 字）", community.announcement || "");
+          if (value === null) return;
+          if (value.length > 1000) { alert("公告不能超过 1000 字"); return; }
+          button.disabled = true;
+          const { data, error } = await supabase.from("communities").update({ announcement: value.trim() }).eq("id", communityId).eq("owner_id", shell.user.id).select("announcement").single();
+          if (error) { alert("保存失败：" + error.message + "。请确认已执行社区管理迁移。"); button.disabled = false; return; }
+          community.announcement = data.announcement; renderAnnouncement();
+        }); host.append(button);
+      }
     }
 
     // 加入或退出社区
@@ -441,6 +468,21 @@ async function handlePostManagement(button, card) {
       }
     );
 
+    $("#communityMembers").addEventListener("click", async event => {
+      const roleButton = event.target.closest("[data-member-role]");
+      const removeButton = event.target.closest("[data-member-remove]");
+      if (!roleButton && !removeButton) return;
+      const target = roleButton ? roleButton.dataset.memberRole : removeButton.dataset.memberRemove;
+      if (!canManageMembers || target === community.owner_id || target === shell.user.id) return;
+      const button = roleButton || removeButton;
+      if (removeButton && !confirm("确定将该成员移出社区吗？")) return;
+      button.disabled = true;
+      const result = roleButton
+        ? await supabase.from("community_members").update({ role: roleButton.dataset.role }).eq("community_id", communityId).eq("user_id", target)
+        : await supabase.from("community_members").delete().eq("community_id", communityId).eq("user_id", target);
+      if (result.error) { alert("管理操作失败：" + result.error.message); button.disabled = false; return; }
+      await loadMembers();
+    });
     // 初始化页面
     await loadCommunity();
   }
