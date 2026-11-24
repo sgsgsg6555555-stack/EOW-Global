@@ -1,4 +1,4 @@
-import { supabase, $, setNotice } from "./shared.js?v=6";
+import { supabase, $, setNotice } from "./shared.js?v=8";
 
 const inviteCode = new URLSearchParams(location.search).get("invite") || localStorage.getItem("eow_pending_invite") || "";
 if (inviteCode) localStorage.setItem("eow_pending_invite", inviteCode.slice(0, 40));
