@@ -148,3 +148,15 @@ body.eow-feed-page{--eow-bg:#050d1e;--eow-panel:#0b1830;--eow-panel2:#101f3b;--e
 
 .eow-feed-page .eow-post-actions [data-action="like"]{color:#ff6b91}
 .eow-feed-page .eow-post-actions [data-action="like"].liked{background:#40213b;color:#ff6b91}
+
+/* Single-row desktop header: navigation now sits beside the EOW brand */
+.eow-feed-page #header .topbar{height:72px;gap:clamp(10px,1.3vw,20px);padding:0 max(18px,calc((100vw - 1480px)/2));}
+.eow-feed-page .brand{min-width:74px;flex:0 0 74px}
+.eow-feed-page .eow-global-nav{height:72px;position:static;top:auto;z-index:auto;flex:1 1 auto;min-width:0;justify-content:flex-start;gap:clamp(10px,1.35vw,22px);padding:0;border:0;background:transparent}
+.eow-feed-page .eow-global-nav>a{height:72px;gap:6px;font-size:13px;white-space:nowrap}
+.eow-feed-page .eow-language{margin-left:2px;gap:5px;white-space:nowrap}
+.eow-feed-page .searchbox{flex:0 1 280px;min-width:150px;max-width:280px;padding:10px 13px}
+.eow-feed-page .top-actions .btn{display:none}
+@media(max-width:1180px){.eow-feed-page .eow-global-nav{gap:10px}.eow-feed-page .eow-global-nav>a{font-size:12px}.eow-feed-page .searchbox{flex-basis:190px;min-width:120px}}
+@media(max-width:900px){.eow-feed-page #header .topbar{gap:9px;padding:0 12px}.eow-feed-page .brand{min-width:58px;flex-basis:58px;font-size:22px}.eow-feed-page .eow-global-nav{gap:8px}.eow-feed-page .eow-global-nav>a{gap:3px;font-size:11px}.eow-feed-page .searchbox{flex-basis:150px;min-width:100px}.eow-feed-page .eow-language{font-size:10px}}
+@media(max-width:720px){.eow-feed-page #header .topbar{height:60px}.eow-feed-page .eow-global-nav{height:60px;flex:1;justify-content:space-around;gap:5px}.eow-feed-page .eow-global-nav>a{height:60px}.eow-feed-page .eow-global-nav>a span{display:none}.eow-feed-page .searchbox{display:none}.eow-feed-page .eow-language{margin-left:3px}.eow-feed-page .top-actions .suggestion{display:none}}
