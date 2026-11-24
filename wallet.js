@@ -1,4 +1,4 @@
-﻿import {supabase,$,initShell,esc,setNotice} from "./shared.js?v=4";
+﻿import {supabase,$,initShell,esc,setNotice} from "./shared.js?v=5";
 const shell=await initShell("wallet");
 if(shell){
  async function load(){
