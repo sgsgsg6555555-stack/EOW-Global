@@ -28,3 +28,7 @@
 
 /* EOW 扩展：认证标识与个人封面 */
 .eow-verified{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:#2785ee;color:#fff;font-size:11px;font-weight:800;vertical-align:middle;margin-left:4px;box-shadow:0 0 0 2px #fff}.profile-cover{height:210px;border-radius:18px 18px 0 0;background:linear-gradient(120deg,#6478ee,#24bfd0);background-position:center;background-size:cover}.profile-cover.has-cover{background-color:#eaf0ff}.cover-setting{margin-top:12px}
+
+
+/* EOW account settings and accessible interaction states */
+.settings-account{display:flex;align-items:center;gap:14px;padding:14px 0}.settings-avatar{width:54px;height:54px;border-radius:18px;display:grid;place-items:center;background:linear-gradient(135deg,#6c63e8,#18b8d5);color:#fff;font-size:23px;font-weight:900}.settings-account p{margin:5px 0 0;font-size:12px;overflow-wrap:anywhere}.settings-form{display:grid;gap:9px;max-width:520px}.settings-form label{font-size:14px;font-weight:700;margin-top:8px}.settings-form .btn{justify-self:start;margin-top:8px}.settings-danger{border-color:#f1dce0}.btn:disabled{opacity:.58;cursor:not-allowed;transform:none}button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid #80aaff;outline-offset:2px}@media(max-width:700px){.settings-form .btn{width:100%}.settings-account{align-items:flex-start}}
