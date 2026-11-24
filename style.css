@@ -145,3 +145,6 @@ body.eow-feed-page{--eow-bg:#050d1e;--eow-panel:#0b1830;--eow-panel2:#101f3b;--e
 .eow-feed-page .eow-right-rail{top:138px}
 @media(max-width:1120px){.eow-feed-page .eow-global-layout{grid-template-columns:210px minmax(0,1fr)}}
 @media(max-width:720px){.eow-feed-page .eow-global-nav{top:60px;justify-content:space-around;padding:0 8px}.eow-feed-page .eow-global-layout{display:block}.eow-feed-page .eow-post-actions{gap:10px;flex-wrap:wrap}.eow-feed-page .eow-composer-actions{margin-left:0}.eow-feed-page .eow-right-rail{position:static}}
+
+.eow-feed-page .eow-post-actions [data-action="like"]{color:#ff6b91}
+.eow-feed-page .eow-post-actions [data-action="like"].liked{background:#40213b;color:#ff6b91}
