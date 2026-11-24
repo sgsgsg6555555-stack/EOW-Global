@@ -103,7 +103,7 @@ export async function initCallUI(user, supabase, onIncoming = null) {
     });
     const result=await new Promise((resolve,reject)=>{
       const timer=setTimeout(()=>reject(new Error("通话信令连接超时")),12000);
-      channel.subscribe(state=>{if(state==="SUBSCRIBED"){clearTimeout(timer);resolve(state);}else if(state==="CHANNEL_ERROR"||state==="TIMED_OUT"){clearTimeout(timer);reject(new Error("无法建立安全通话频道，请检查 Supabase Realtime 策略"));}});
+      signalChannel.subscribe(state=>{if(state==="SUBSCRIBED"){clearTimeout(timer);resolve(state);}else if(state==="CHANNEL_ERROR"||state==="TIMED_OUT"){clearTimeout(timer);reject(new Error("无法连接实时通话信令，请检查 Supabase Realtime 配置"));}});
     });
     return result;
   };
