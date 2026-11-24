@@ -1,4 +1,4 @@
-import {supabase,$,avatarHTML,displayName,getProfiles,esc,relativeTime} from "./shared.js?v=12";
+import {supabase,$,avatarHTML,displayName,getProfiles,esc,relativeTime} from "./shared.js?v=13";
 
 const t=(zh,en)=>document.documentElement.lang==="en"?en:zh;
 const upload=async(userId,file,prefix)=>{
