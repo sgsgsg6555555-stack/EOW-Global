@@ -1,4 +1,7 @@
-import { esc, avatarHTML, displayName, getProfiles } from "./shared.js";
+
+const esc=value=>String(value??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#39;");
+const displayName=profile=>profile?.display_name||profile?.username||"EOW 用户";
+const avatarHTML=profile=>profile?.avatar_url?'<img class="avatar" src="'+esc(profile.avatar_url)+'" alt="头像">' : '<span class="avatar avatar-fallback">E</span>';
 
 const noticeStyle = `
 #eowMessageNoticeRoot{position:fixed;right:24px;bottom:24px;z-index:8000;display:flex;flex-direction:column;align-items:flex-end;gap:10px;pointer-events:none}
@@ -26,7 +29,7 @@ export async function initGlobalMessageNotices(user,supabase){
  const badge=launcher.querySelector("span");
  const notify=async(message)=>{
   if(!message||message.sender_id===user.id)return;
-  let profile={};try{profile=(await getProfiles([message.sender_id]))[message.sender_id]||{};}catch(e){console.warn("无法读取消息发送者资料",e);}
+  let profile={};try{const {data}=await supabase.from("profiles").select("id,username,display_name,avatar_url").eq("id",message.sender_id).maybeSingle();profile=data||{};}catch(e){console.warn("无法读取消息发送者资料",e);}
   unread+=1;badge.hidden=false;badge.textContent=unread>99?"99+":String(unread);
   const card=document.createElement("article");card.className="eow-message-toast";card.setAttribute("role","button");card.tabIndex=0;
   card.innerHTML=`${avatarHTML(profile)}<div class="eow-toast-copy"><strong>${esc(displayName(profile))} 给你发来新消息</strong><p>${esc(message.content||"你收到一条新消息")}</p><small>${new Date(message.created_at||Date.now()).toLocaleTimeString("zh-CN",{hour:"2-digit",minute:"2-digit"})} · 点击回复</small></div><button class="eow-toast-close" type="button" aria-label="关闭提醒">×</button>`;
