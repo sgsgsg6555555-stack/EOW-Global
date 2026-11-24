@@ -8,7 +8,7 @@ import {
   setNotice,
   displayName,
   avatarHTML
-} from "./shared.js?v=20";
+} from "./shared.js?v=21";
 
 const shell = await initShell("communities");
 
