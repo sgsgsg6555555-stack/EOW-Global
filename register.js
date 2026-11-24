@@ -3,6 +3,7 @@ import { supabase, $, setNotice } from "./shared.js?v=6";
 const form = $("#registerForm");
 let mode = "email";
 let pendingPhone = "";
+let pendingEmail = "";
 
 let busy = false;
 
@@ -19,6 +20,9 @@ function setMode(next) {
   $("#emailTab").setAttribute("aria-pressed", String(emailMode));
   $("#phoneTab").setAttribute("aria-pressed", String(!emailMode));
   $("#otpSection").hidden = true;
+  $("#otpIntro").textContent = "验证码已发送到你的邮箱。请填写邮件中的 6 位验证码完成验证。";
+  $("#otpLabel").textContent = "邮箱验证码";
+  $("#verifyButton").textContent = "验证并完成注册";
   form.hidden = false;
   showMessage("");
 }
@@ -46,18 +50,21 @@ form.addEventListener("submit", async event => {
     if (mode === "email") {
       const email = $("#email").value.trim().toLowerCase();
       if (!email) throw new Error("请输入有效邮箱地址。");
-      const emailRedirectTo = new URL("feed.html", location.href).href;
-      const { data, error } = await supabase.auth.signUp({
-        email, password,
-        options: { emailRedirectTo }
-      });
+      pendingEmail = email;
+      const { data, error } = await supabase.auth.signUp({ email, password });
       if (error) throw error;
       if (data.session) {
         showMessage("注册成功，正在进入 EOW…", "success");
         location.replace("feed.html");
       } else {
-        form.reset();
-        showMessage("注册申请已提交，请检查邮箱并点击验证链接完成注册。", "success");
+        form.hidden = true;
+        $("#otpSection").hidden = false;
+        $("#otpIntro").textContent = "6 位验证码已发送到 " + email + "。请查看收件箱或垃圾邮件。";
+        $("#otpLabel").textContent = "邮箱验证码";
+        $("#verifyButton").textContent = "验证邮箱并完成注册";
+        $("#otp").value = "";
+        $("#otp").focus();
+        showMessage("验证码已发送，请输入邮件中的 6 位数字。", "success");
       }
     } else {
       const phone = $("#phone").value.trim().replace(/[\s()-]/g, "");
@@ -89,13 +96,16 @@ form.addEventListener("submit", async event => {
 
 $("#verifyButton").addEventListener("click", async () => {
   const token = $("#otp").value.trim();
-  if (!/^\d{6}$/.test(token) || !pendingPhone) return showMessage("请输入短信中的 6 位验证码。", "error");
+  if (!/^\d{6}$/.test(token)) return showMessage("请输入邮件或短信中的 6 位验证码。", "error");
+  if (!pendingEmail && !pendingPhone) return showMessage("注册验证状态已失效，请重新注册。", "error");
   const button = $("#verifyButton");
   button.disabled = true;
   try {
-    const { error } = await supabase.auth.verifyOtp({ phone: pendingPhone, token, type: "sms" });
-    if (error) throw error;
-    showMessage("手机号验证成功，正在进入 EOW…", "success");
+    const response = pendingEmail
+      ? await supabase.auth.verifyOtp({ email: pendingEmail, token, type: "signup" })
+      : await supabase.auth.verifyOtp({ phone: pendingPhone, token, type: "sms" });
+    if (response.error) throw response.error;
+    showMessage("验证成功，正在进入 EOW…", "success");
     location.replace("feed.html");
   } catch (error) {
     showMessage("验证失败：" + (error?.message || "验证码无效或已过期"), "error");
@@ -105,13 +115,15 @@ $("#verifyButton").addEventListener("click", async () => {
 });
 
 $("#resendButton").addEventListener("click", async () => {
-  if (!pendingPhone) return;
+  if (!pendingPhone && !pendingEmail) return;
   const button = $("#resendButton");
   button.disabled = true;
   try {
-    const { error } = await supabase.auth.resend({ type: "sms", phone: pendingPhone });
-    if (error) throw error;
-    showMessage("已请求重新发送验证码，请查看短信。", "success");
+    const response = pendingEmail
+      ? await supabase.auth.resend({ type: "signup", email: pendingEmail })
+      : await supabase.auth.resend({ type: "sms", phone: pendingPhone });
+    if (response.error) throw response.error;
+    showMessage("已请求重新发送验证码，请检查邮箱或短信。", "success");
   } catch (error) {
     showMessage("重新发送失败：" + (error?.message || "请稍后重试"), "error");
   } finally {
