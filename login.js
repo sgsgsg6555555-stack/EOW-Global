@@ -1,3 +1,3 @@
-﻿import {supabase,$,setNotice} from "./shared.js?v=4";
+﻿import {supabase,$,setNotice} from "./shared.js?v=5";
 const form=$("#loginForm");form.onsubmit=async e=>{e.preventDefault();const btn=$("#loginButton");btn.disabled=true;btn.textContent="正在登录…";try{const {error}=await supabase.auth.signInWithPassword({email:$("#email").value.trim(),password:$("#password").value});if(error)throw error;const next=new URLSearchParams(location.search).get("next");location.href=next&&next.startsWith("/")&&!next.startsWith("//")?next:"index.html";}catch(err){setNotice($("#message"),"登录失败："+err.message,"error");}finally{btn.disabled=false;btn.textContent="登录 EOW 账号";}};
 
