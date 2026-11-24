@@ -1,4 +1,4 @@
-﻿import {supabase,$,initShell,shellHeader,avatarHTML,displayName,getProfiles,postCard,setNotice} from "./shared.js?v=7";
+﻿import {supabase,$,initShell,shellHeader,avatarHTML,displayName,getProfiles,postCard,setNotice,trackActivity} from "./shared.js?v=7";
 const shell=await initShell("home");if(shell){
 $("#composerAvatar").innerHTML=avatarHTML(shell.profile);
 $("#postMedia").addEventListener("change",e=>$("#mediaName").textContent=e.target.files[0]?.name||"支持图片或视频，单个文件最大 30MB");
@@ -16,7 +16,7 @@ offset+=posts.length;$("#feedStatus").textContent=`已显示 ${offset} 条动态
 }
 $("#postForm").addEventListener("submit",async e=>{e.preventDefault();const text=$("#postText").value.trim();const file=$("#postMedia").files[0];if(!text&&!file){setNotice($("#postNotice"),"请填写动态内容或选择图片/视频。","error");return;}if(file&&file.size>30*1024*1024){setNotice($("#postNotice"),"文件不能超过 30MB。","error");return;}
 const btn=$("#publishBtn");btn.disabled=true;btn.textContent="正在发布…";try{let mediaUrl=null,mediaType=null;if(file){const path=`${shell.user.id}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g,"_")}`;const {error:upErr}=await supabase.storage.from("posts").upload(path,file,{upsert:false,contentType:file.type});if(upErr)throw upErr;mediaUrl=supabase.storage.from("posts").getPublicUrl(path).data.publicUrl;mediaType=file.type.startsWith("video/")?"video":"image";}
-const {error}=await supabase.from("posts").insert({user_id:shell.user.id,content:text,media_url:mediaUrl,media_type:mediaType,created_at:new Date().toISOString()});if(error)throw error;$("#postText").value="";$("#postMedia").value="";$("#mediaName").textContent="支持图片或视频，单个文件最大 30MB";setNotice($("#postNotice"),"发布成功！","success");await loadFeed(true);
+const {error}=await supabase.from("posts").insert({user_id:shell.user.id,content:text,media_url:mediaUrl,media_type:mediaType,created_at:new Date().toISOString()});if(error)throw error;await trackActivity("post_created");$("#postText").value="";$("#postMedia").value="";$("#mediaName").textContent="支持图片或视频，单个文件最大 30MB";setNotice($("#postNotice"),"发布成功！","success");await loadFeed(true);
 }catch(err){setNotice($("#postNotice"),"发布失败："+err.message,"error");}finally{btn.disabled=false;btn.textContent="发布动态";}});
 async function handlePostManagement(button, card) {
   const action = button.dataset.action;
