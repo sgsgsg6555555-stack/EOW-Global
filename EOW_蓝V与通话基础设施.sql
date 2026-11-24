@@ -13,7 +13,8 @@ alter table public.eow_verification_applications
   add column if not exists real_name text,
   add column if not exists application_type text,
   add column if not exists admin_note text,
-  add column if not exists proof_url text;
+  add column if not exists proof_url text,
+  add column if not exists reviewed_by uuid references auth.users(id) on delete set null;
 
 create index if not exists eow_verification_user_status_created_idx
   on public.eow_verification_applications(user_id, status, created_at desc);
@@ -25,7 +26,7 @@ begin
   if new.status = 'pending' then
     perform pg_advisory_xact_lock(hashtext(new.user_id::text));
     if exists (select 1 from public.eow_verification_applications a
-               where a.user_id = new.user_id and a.status = 'pending') then
+               where a.user_id = new.user_id and a.status = 'pending' and a.id is distinct from new.id) then
       raise exception 'You already have a pending verification application';
     end if;
   end if;
@@ -46,7 +47,7 @@ as $$
 begin
   if (new.is_verified is distinct from old.is_verified
       or new.verified_at is distinct from old.verified_at)
-     and not coalesce(public.eow_is_admin(), false) then
+     and not coalesce(public.is_eow_admin(), false) then
     raise exception 'Only an EOW administrator can change verification status';
   end if;
   return new;
