@@ -1,14 +1,69 @@
-﻿import {supabase,$,initShell,avatarHTML,displayName,esc,getProfiles,setNotice} from "./shared.js?v=5";
-const shell=await initShell("messages");if(shell){let activeId=null,profiles={},allMessages=[],channel=null;
- async function loadConversations(){const {data,error}=await supabase.from("messages").select("id,sender_id,receiver_id,content,created_at").or(`sender_id.eq.${shell.user.id},receiver_id.eq.${shell.user.id}`).order("created_at",{ascending:false}).limit(300);if(error){$("#conversations").textContent="读取私信失败："+error.message;return;}allMessages=data||[];const ids=[...new Set(allMessages.map(m=>m.sender_id===shell.user.id?m.receiver_id:m.sender_id))];try{profiles={...profiles,...await getProfiles(ids)};}catch(e){console.warn(e);}const ordered=ids.map(id=>({id,latest:allMessages.find(m=>(m.sender_id===id&&m.receiver_id===shell.user.id)||(m.receiver_id===id&&m.sender_id===shell.user.id))}));$("#conversations").innerHTML=ordered.map(c=>`<button class="conversation-item ${activeId===c.id?"active":""}" data-user="${esc(c.id)}">${avatarHTML(profiles[c.id])}<span class="grow"><strong>${esc(displayName(profiles[c.id]))}</strong><p class="muted">${esc(c.latest?.content||"")}</p></span></button>`).join("")||'<div class="empty">暂无私信。搜索成员或从个人主页发起聊天。</div>';if(activeId)renderMessages();}
- async function openChat(id){if(!id||id===shell.user.id)return;activeId=id;if(!profiles[id]){try{profiles={...profiles,...await getProfiles([id])};}catch(e){setNotice($("#messageNotice"),"读取联系人资料失败："+e.message,"error");return;}}const p=profiles[id];$("#chatTitle").innerHTML=`${avatarHTML(p)}<div class="grow"><strong>${esc(displayName(p))}</strong><small class="muted">${p?.username?"@"+esc(p.username):"EOW 成员"}</small></div><a class="btn ghost small" href="profile.html?id=${encodeURIComponent(id)}">查看主页</a>`;$("#messageText").disabled=false;$("#sendBtn").disabled=false;await loadConversations();renderMessages();}
- function renderMessages(){const rows=allMessages.filter(m=>(m.sender_id===shell.user.id&&m.receiver_id===activeId)||(m.sender_id===activeId&&m.receiver_id===shell.user.id)).sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));$("#chatMessages").innerHTML=rows.map(m=>`<div class="bubble ${m.sender_id===shell.user.id?"mine":""}">${esc(m.content||"")}<time>${new Date(m.created_at||Date.now()).toLocaleString("zh-CN")}</time></div>`).join("")||'<div class="empty">发送第一条消息，开始交流。</div>';$("#chatMessages").scrollTop=$("#chatMessages").scrollHeight;}
- $("#conversations").addEventListener("click",e=>{const b=e.target.closest("[data-user]");if(b)openChat(b.dataset.user);});
- async function searchPeople(){const q=$("#peopleSearch").value.trim();if(!q){$("#peopleResults").innerHTML="";return;}const [a,b]=await Promise.all([supabase.from("profiles").select("id,username,display_name,avatar_url").ilike("username",`%${q}%`).neq("id",shell.user.id).limit(8),supabase.from("profiles").select("id,username,display_name,avatar_url").ilike("display_name",`%${q}%`).neq("id",shell.user.id).limit(8)]);if(a.error||b.error){$("#peopleResults").textContent="搜索失败，请稍后重试。";return;}const map=new Map([...(a.data||[]),...(b.data||[])].map(p=>[p.id,p]));const hits=[...map.values()];profiles={...profiles,...Object.fromEntries(hits.map(p=>[p.id,p]))};$("#peopleResults").innerHTML=hits.map(p=>`<button class="conversation-item" data-user="${esc(p.id)}">${avatarHTML(p)}<span class="grow"><strong>${esc(displayName(p))}</strong><p class="muted">@${esc(p.username||"eow-user")}</p></span><span class="badge">聊天</span></button>`).join("")||'<div class="empty">没有找到匹配成员。</div>';}
- $("#searchPeople").addEventListener("click",searchPeople);$("#peopleSearch").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();searchPeople();}});$("#refreshMessages").addEventListener("click",loadConversations);
- const requested=new URLSearchParams(location.search).get("user");await loadConversations();if(requested)await openChat(requested);
- $("#sendForm").onsubmit=async e=>{e.preventDefault();if(!activeId)return;const content=$("#messageText").value.trim();if(!content)return;const btn=$("#sendBtn");btn.disabled=true;const {error}=await supabase.from("messages").insert({sender_id:shell.user.id,receiver_id:activeId,content,created_at:new Date().toISOString()});if(error)setNotice($("#messageNotice"),"发送失败："+error.message,"error");else{$("#messageText").value="";setNotice($("#messageNotice"),"消息已发送。","success");await loadConversations();}btn.disabled=false;};
- try{channel=supabase.channel("eow-messages-"+shell.user.id).on("postgres_changes",{event:"INSERT",schema:"public",table:"messages"},payload=>{const m=payload.new;if(m.sender_id===shell.user.id||m.receiver_id===shell.user.id){loadConversations();}}).subscribe();}catch(e){console.info("Realtime 未启用，可使用刷新按钮更新消息",e);}
- window.addEventListener("beforeunload",()=>{if(channel)supabase.removeChannel(channel);});
+import {supabase,$,initShell,avatarHTML,displayName,esc,getProfiles,setNotice} from "./shared.js?v=6";
+const shell=await initShell("messages");
+if(shell){
+  let activeId=null,profiles={},allMessages=[],channel=null,readTrackingAvailable=true;
+  const baseFields="id,sender_id,receiver_id,content,created_at";
+  async function fetchMessages(){
+    let result=await supabase.from("messages").select(readTrackingAvailable?baseFields+",read_at":baseFields).or(`sender_id.eq.${shell.user.id},receiver_id.eq.${shell.user.id}`).order("created_at",{ascending:false}).limit(300);
+    if(result.error&&readTrackingAvailable&&/read_at|column/i.test(result.error.message||"")){
+      readTrackingAvailable=false;
+      result=await supabase.from("messages").select(baseFields).or(`sender_id.eq.${shell.user.id},receiver_id.eq.${shell.user.id}`).order("created_at",{ascending:false}).limit(300);
+    }
+    return result;
+  }
+  async function markConversationRead(){
+    if(!activeId||!readTrackingAvailable)return;
+    const {error}=await supabase.from("messages").update({read_at:new Date().toISOString()}).eq("sender_id",activeId).eq("receiver_id",shell.user.id).is("read_at",null);
+    if(error){if(/read_at|column|permission/i.test(error.message||""))readTrackingAvailable=false;else console.warn("消息已读状态更新失败",error);}
+  }
+  async function loadConversations(){
+    const {data,error}=await fetchMessages();
+    if(error){$("#conversations").textContent="读取私信失败："+error.message;return;}
+    allMessages=data||[];
+    const ids=[...new Set(allMessages.map(m=>m.sender_id===shell.user.id?m.receiver_id:m.sender_id))];
+    try{profiles={...profiles,...await getProfiles(ids)};}catch(e){console.warn(e);}
+    const ordered=ids.map(id=>{
+      const thread=allMessages.filter(m=>(m.sender_id===id&&m.receiver_id===shell.user.id)||(m.receiver_id===id&&m.sender_id===shell.user.id));
+      const unread=thread.filter(m=>m.sender_id===id&&m.receiver_id===shell.user.id&&m.read_at==null).length;
+      return {id,latest:thread[0],unread};
+    });
+    $("#conversations").innerHTML=ordered.map(c=>`<button class="conversation-item ${activeId===c.id?"active":""}" data-user="${esc(c.id)}">${avatarHTML(profiles[c.id])}<span class="grow"><strong>${esc(displayName(profiles[c.id]))}</strong><p class="muted">${esc(c.latest?.content||"")}</p></span>${c.unread?`<span class="count-pill" aria-label="${c.unread} 条未读">${c.unread>99?"99+":c.unread}</span>`:""}</button>`).join("")||'<div class="empty">暂无私信。搜索成员或从个人主页发起聊天。</div>';
+    if(activeId)renderMessages();
+  }
+  async function openChat(id){
+    if(!id||id===shell.user.id)return;activeId=id;
+    if(!profiles[id]){try{profiles={...profiles,...await getProfiles([id])};}catch(e){setNotice($("#messageNotice"),"读取联系人资料失败："+e.message,"error");return;}}
+    const p=profiles[id];
+    $("#chatTitle").innerHTML=`${avatarHTML(p)}<div class="grow"><strong>${esc(displayName(p))}</strong><small class="muted">${p?.username?"@"+esc(p.username):"EOW 成员"}</small></div><a class="btn ghost small" href="profile.html?id=${encodeURIComponent(id)}">查看主页</a>`;
+    $("#messageText").disabled=false;$("#sendBtn").disabled=false;
+    await markConversationRead();await loadConversations();renderMessages();
+  }
+  function renderMessages(){
+    const rows=allMessages.filter(m=>(m.sender_id===shell.user.id&&m.receiver_id===activeId)||(m.sender_id===activeId&&m.receiver_id===shell.user.id)).sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+    $("#chatMessages").innerHTML=rows.map(m=>`<div class="bubble ${m.sender_id===shell.user.id?"mine":""}">${esc(m.content||"")}<time>${new Date(m.created_at||Date.now()).toLocaleString("zh-CN")}${m.sender_id===shell.user.id&&readTrackingAvailable?(m.read_at?" · 已读":" · 已发送"):""}</time></div>`).join("")||'<div class="empty">发送第一条消息，开始交流。</div>';
+    $("#chatMessages").scrollTop=$("#chatMessages").scrollHeight;
+  }
+  $("#conversations").addEventListener("click",e=>{const b=e.target.closest("[data-user]");if(b)openChat(b.dataset.user);});
+  async function searchPeople(){
+    const q=$("#peopleSearch").value.trim();if(!q){$("#peopleResults").innerHTML="";return;}
+    const [a,b]=await Promise.all([supabase.from("profiles").select("id,username,display_name,avatar_url").ilike("username",`%${q}%`).neq("id",shell.user.id).limit(8),supabase.from("profiles").select("id,username,display_name,avatar_url").ilike("display_name",`%${q}%`).neq("id",shell.user.id).limit(8)]);
+    if(a.error||b.error){$("#peopleResults").textContent="搜索失败，请稍后重试。";return;}
+    const map=new Map([...(a.data||[]),...(b.data||[])].map(p=>[p.id,p]));const hits=[...map.values()];
+    profiles={...profiles,...Object.fromEntries(hits.map(p=>[p.id,p]))};
+    $("#peopleResults").innerHTML=hits.map(p=>`<button class="conversation-item" data-user="${esc(p.id)}">${avatarHTML(p)}<span class="grow"><strong>${esc(displayName(p))}</strong><p class="muted">@${esc(p.username||"eow-user")}</p></span><span class="badge">聊天</span></button>`).join("")||'<div class="empty">没有找到匹配成员。</div>';
+  }
+  $("#searchPeople").addEventListener("click",searchPeople);
+  $("#peopleSearch").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();searchPeople();}});
+  $("#refreshMessages").addEventListener("click",loadConversations);
+  const requested=new URLSearchParams(location.search).get("user");await loadConversations();if(requested)await openChat(requested);
+  $("#sendForm").onsubmit=async e=>{
+    e.preventDefault();if(!activeId)return;const content=$("#messageText").value.trim();if(!content)return;
+    const btn=$("#sendBtn");btn.disabled=true;
+    try{const {error}=await supabase.from("messages").insert({sender_id:shell.user.id,receiver_id:activeId,content,created_at:new Date().toISOString()});if(error)throw error;$("#messageText").value="";setNotice($("#messageNotice"),"消息已发送。","success");await loadConversations();}
+    catch(error){setNotice($("#messageNotice"),"发送失败："+error.message,"error");}
+    finally{btn.disabled=false;$("#messageText").focus();}
+  };
+  try{channel=supabase.channel("eow-messages-"+shell.user.id).on("postgres_changes",{event:"*",schema:"public",table:"messages"},payload=>{const m=payload.new||payload.old;if(m?.sender_id===shell.user.id||m?.receiver_id===shell.user.id){loadConversations().then(()=>{if(activeId)markConversationRead();});}}).subscribe();}
+  catch(e){console.info("Realtime 未启用，可使用刷新按钮更新消息",e);}
+  window.addEventListener("pagehide",()=>{if(channel)supabase.removeChannel(channel);},{once:true});
 }
-
