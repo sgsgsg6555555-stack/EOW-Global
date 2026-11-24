@@ -1,4 +1,4 @@
-import { supabase, $, setNotice } from "./shared.js?v=6";
+import { supabase, $, setNotice } from "./shared.js?v=7";
 
 const form = $("#loginForm");
 const identifier = $("#identifier");
