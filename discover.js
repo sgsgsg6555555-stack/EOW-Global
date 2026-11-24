@@ -1,4 +1,4 @@
-import {supabase,$,initShell,avatarHTML,displayName,esc} from "./shared.js?v=8";
+import {supabase,$,initShell,avatarHTML,displayName,esc} from "./shared.js?v=20";
 const shell=await initShell("discover");
 if(shell){
  let users=[],relations=[],following=new Set(),myProfile={};
