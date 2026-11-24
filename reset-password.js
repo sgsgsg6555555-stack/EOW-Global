@@ -1,4 +1,4 @@
-import { supabase, $, setNotice } from "./shared.js?v=20";
+import { supabase, $, setNotice } from "./shared.js?v=21";
 
 const form = $("#resetForm");
 const button = $("#resetButton");
