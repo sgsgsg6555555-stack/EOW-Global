@@ -1,4 +1,4 @@
-import { supabase, $, initShell, setNotice } from "./shared.js?v=5";
+import { supabase, $, initShell, setNotice } from "./shared.js?v=20";
 
 const shell = await initShell("settings");
 
