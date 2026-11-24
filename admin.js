@@ -1,9 +1,9 @@
-﻿import {supabase,$,esc,avatarHTML,displayName,setNotice,shellHeader} from "./shared.js?v=5";
+﻿import {supabase,$,esc,avatarHTML,displayName,setNotice,shellHeader} from "./shared.js?v=6";
 if($("#header")) $("#header").innerHTML=shellHeader();
 const {data:{user},error:userError}=await supabase.auth.getUser();
 if(userError||!user){location.href="login.html?next="+encodeURIComponent("/admin.html");}
 else{
- const {data:admin,error:adminError}=await supabase.from("eow_admins").select("user_id,role,active").eq("user_id",user.id).eq("active",true).maybeSingle();
+ const {data:admin,error:adminError}=await supabase.from("eow_admins").select("user_id,role").eq("user_id",user.id).maybeSingle();
  if(adminError||!admin){$("#adminStatus").textContent="没有管理员权限。请由项目所有者在 Supabase SQL Editor 中将你的用户 UUID 添加到 eow_admins。";$("#adminStatus").classList.add("error");}
  else{
   $("#adminStatus").textContent=`已验证管理员身份：${admin.role}`;$("#adminApp").hidden=false;
