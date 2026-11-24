@@ -11,7 +11,7 @@ const ids=posts.map(p=>p.user_id);let profiles={};try{profiles=await getProfiles
 const postIds=posts.map(p=>p.id);
 let likes=[],comments=[];if(postIds.length){const l=await supabase.from("likes").select("post_id,user_id").in("post_id",postIds);if(!l.error)likes=l.data||[];const c=await supabase.from("comments").select("*").in("post_id",postIds).order("created_at",{ascending:true});if(!c.error)comments=c.data||[];}
 let commenterProfiles={};try{commenterProfiles=await getProfiles(comments.map(c=>c.user_id).filter(id=>!profiles[id]));}catch(e){console.warn("评论者资料读取失败",e);}profiles={...profiles,...commenterProfiles};
-for(const p of posts){const liked=likes.some(l=>l.post_id===p.id&&l.user_id===shell.user.id);const cs=comments.filter(c=>c.post_id===p.id).map(c=>({...c,profile:profiles[c.user_id]}));$("#feed").insertAdjacentHTML("beforeend",postCard(p,profiles[p.user_id],liked,cs));}
+for(const p of posts){const liked=likes.some(l=>l.post_id===p.id&&l.user_id===shell.user.id);const cs=comments.filter(c=>c.post_id===p.id).map(c=>({...c,profile:profiles[c.user_id]}));$("#feed").insertAdjacentHTML("beforeend",postCard(p,profiles[p.user_id],liked,cs,shell.user.id));}
 offset+=posts.length;$("#feedStatus").textContent=`已显示 ${offset} 条动态`;$("#loadMore").hidden=posts.length<pageSize;
 }
 $("#postForm").addEventListener("submit",async e=>{e.preventDefault();const text=$("#postText").value.trim();const file=$("#postMedia").files[0];if(!text&&!file){setNotice($("#postNotice"),"请填写动态内容或选择图片/视频。","error");return;}if(file&&file.size>30*1024*1024){setNotice($("#postNotice"),"文件不能超过 30MB。","error");return;}
