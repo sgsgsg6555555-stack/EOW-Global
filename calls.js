@@ -47,7 +47,7 @@ export async function initCallUI(user, supabase) {
   const closeMedia=()=>{
     if(pc){pc.ontrack=null;pc.onicecandidate=null;pc.onconnectionstatechange=null;pc.close();pc=null;}
     if(localStream){localStream.getTracks().forEach(t=>t.stop());localStream=null;}
-    remoteStream=null;remoteCandidates=[];remoteVideo.srcObject=null;remoteAudio.srcObject=null;localVideo.srcObject=null;
+    remoteStream=null;remoteCandidates=[];remoteVideo.srcObject=null;remoteAudio.srcObject=null;localVideo.srcObject=null;remoteVideo.hidden=false;localVideo.hidden=false;
     muted=false;cameraOff=false;$("eowMuteCall").textContent="静音";$("eowCameraCall").textContent="关闭摄像头";
   };
   const cleanup=async()=>{
@@ -60,7 +60,7 @@ export async function initCallUI(user, supabase) {
   const ensureMedia=async(type)=>{
     if(!navigator.mediaDevices?.getUserMedia)throw new Error("当前浏览器不支持音视频通话，请使用 HTTPS 页面和较新的浏览器");
     localStream=await navigator.mediaDevices.getUserMedia({audio:true,video:type==="video"});
-    localVideo.srcObject=localStream;
+    localVideo.srcObject=localStream;localVideo.hidden=type!=="video";remoteVideo.hidden=type!=="video";
     $("eowMuteCall").hidden=false;$("eowCameraCall").hidden=type!=="video";$("eowEndCall").hidden=false;
     $("eowAcceptCall").hidden=true;$("eowRejectCall").hidden=true;
   };
