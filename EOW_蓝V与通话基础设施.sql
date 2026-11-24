@@ -120,6 +120,9 @@ create index if not exists eow_calls_caller_created_idx
   on public.eow_calls(caller_id, created_at desc);
 create index if not exists eow_calls_callee_created_idx
   on public.eow_calls(callee_id, created_at desc);
+create unique index if not exists eow_calls_one_active_per_pair
+  on public.eow_calls (least(caller_id, callee_id), greatest(caller_id, callee_id))
+  where status in ('ringing','accepted');
 
 alter table public.eow_calls enable row level security;
 revoke all on public.eow_calls from anon, authenticated;
@@ -185,7 +188,7 @@ as $$
 declare v_user uuid := auth.uid();
 begin
   if v_user is null then raise exception '请先登录'; end if;
-  if p_response not in ('accepted','rejected') then raise exception '响应状态无效'; end if;
+  if p_response is null or p_response not in ('accepted','rejected') then raise exception '响应状态无效'; end if;
 
   update public.eow_calls
      set status = case when p_response = 'accepted' then 'accepted' else 'rejected' end,
@@ -209,7 +212,7 @@ set search_path = ''
 as $$
 begin
   if auth.uid() is null then raise exception '请先登录'; end if;
-  if p_reason not in ('hangup','missed','failed','network_lost') then
+  if p_reason is null or p_reason not in ('hangup','missed','failed','network_lost') then
     raise exception '结束原因无效';
   end if;
 
