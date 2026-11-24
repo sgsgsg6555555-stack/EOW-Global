@@ -1,18 +1,55 @@
 <!doctype html>
-<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>EOW 管理后台</title><link rel="stylesheet" href="style.css">
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EOW 管理后台</title>
+<link rel="stylesheet" href="style.css">
 <style>
-.admin-wrap{max-width:1400px;margin:24px auto;padding:0 20px}.admin-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.admin-stat{background:#fff;border:1px solid #e5eaf4;border-radius:16px;padding:18px}.admin-stat strong{display:block;font-size:26px;margin-top:8px}.admin-nav{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}.admin-nav button{border:0;border-radius:10px;padding:10px 14px;background:#eef3ff;color:#2563eb;cursor:pointer}.admin-nav button.active{background:#2563eb;color:#fff}.admin-table{width:100%;border-collapse:collapse;font-size:14px}.admin-table th,.admin-table td{padding:11px;border-bottom:1px solid #edf0f5;text-align:left;vertical-align:middle}.admin-table th{color:#64748b}.admin-table-wrap{overflow:auto}.admin-actions{display:flex;gap:6px;flex-wrap:wrap}.admin-actions button{border:0;border-radius:8px;padding:7px 10px;cursor:pointer;background:#edf3ff;color:#2563eb}.admin-actions .danger{background:#fff0f0;color:#dc2626}.admin-panel[hidden]{display:none}.admin-search{max-width:360px}.admin-note{color:#64748b;font-size:13px}@media(max-width:900px){.admin-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:560px){.admin-grid{grid-template-columns:1fr}.admin-wrap{padding:0 10px}}
-</style></head><body><div id="header"></div><div class="admin-wrap">
-<section class="panel"><div class="module-head"><div><h1 class="section-title">EOW 管理后台</h1><p class="muted">平台运营、用户审核与内容管理</p></div><a class="btn secondary small" href="feed.html">返回网站</a></div><div id="adminStatus" class="status">正在验证管理员权限…</div></section>
+.admin-wrap{max-width:1440px;margin:24px auto;padding:0 20px}
+.admin-head,.admin-panel{background:#fff;border:1px solid #e5eaf4;border-radius:16px;padding:20px;margin-bottom:16px}
+.admin-head-row{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+.admin-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:16px 0}
+.admin-stat{background:#fff;border:1px solid #e5eaf4;border-radius:16px;padding:18px}
+.admin-stat span{color:#64748b;font-size:13px}.admin-stat strong{display:block;font-size:27px;margin-top:8px;color:#17213c}
+.admin-nav{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}
+.admin-nav button{border:0;border-radius:10px;padding:10px 14px;background:#eef3ff;color:#2563eb;cursor:pointer}
+.admin-nav button.active{background:#2563eb;color:#fff}
+.admin-table-wrap{overflow:auto}.admin-table{width:100%;border-collapse:collapse;font-size:14px;min-width:720px}
+.admin-table th,.admin-table td{padding:12px;border-bottom:1px solid #edf0f5;text-align:left;vertical-align:middle}
+.admin-table th{color:#64748b;font-weight:650;background:#fafbff}
+.admin-panel[hidden]{display:none}.admin-search{max-width:380px;margin:8px 0 16px}
+.admin-note{color:#64748b;font-size:13px;line-height:1.7}
+.admin-status{padding:12px 14px;border-radius:10px;background:#f1f5f9;color:#334155;margin-top:12px}
+.admin-error{background:#fff1f2;color:#be123c}
+.admin-pill{display:inline-block;padding:4px 9px;border-radius:999px;background:#eef2ff;color:#4338ca;font-size:12px}
+.admin-link{color:#2563eb;text-decoration:underline}
+@media(max-width:800px){.admin-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-wrap{padding:0 12px}}
+@media(max-width:480px){.admin-grid{grid-template-columns:1fr}.admin-head,.admin-panel{padding:14px}}
+</style>
+</head>
+<body>
+<div id="header"></div>
+<main class="admin-wrap">
+<section class="admin-head">
+ <div class="admin-head-row"><div><h1 class="section-title">EOW 超级管理后台</h1><p class="muted">平台数据与运营审核中心</p></div><a class="btn secondary small" href="feed.html">返回网站</a></div>
+ <div id="adminStatus" class="admin-status">正在验证管理员权限…</div>
+</section>
 <div id="adminApp" hidden>
-<section class="admin-grid" id="stats"></section>
-<nav class="admin-nav" aria-label="后台模块"><button class="active" data-tab="users">用户管理</button><button data-tab="posts">动态管理</button><button data-tab="verifications">蓝 V 审核</button><button data-tab="reports">举报管理</button><button data-tab="gifts">礼物管理</button><button data-tab="finance">财务订单</button><button data-tab="settings">网站设置</button><button data-tab="audit">操作日志</button></nav>
-<section class="panel admin-panel" id="tab-users"><h2 class="section-title">用户管理</h2><input class="field admin-search" id="userSearch" placeholder="搜索昵称、用户名或邮箱"><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>用户</th><th>用户名</th><th>认证</th><th>注册时间</th><th>操作</th></tr></thead><tbody id="usersBody"></tbody></table></div></section>
-<section class="panel admin-panel" id="tab-posts" hidden><h2 class="section-title">动态管理</h2><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>作者</th><th>内容</th><th>类型</th><th>发布时间</th><th>操作</th></tr></thead><tbody id="postsBody"></tbody></table></div></section>
-<section class="panel admin-panel" id="tab-verifications" hidden><h2 class="section-title">蓝 V 认证申请</h2><p class="admin-note">审核通过后会在个人资料中展示认证标识。请按平台实际认证规则核验材料。</p><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>申请人</th><th>申请说明</th><th>状态</th><th>提交时间</th><th>操作</th></tr></thead><tbody id="verificationBody"></tbody></table></div></section>
-<section class="panel admin-panel" id="tab-reports" hidden><h2 class="section-title">举报管理</h2><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>举报人</th><th>对象</th><th>原因</th><th>状态</th><th>操作</th></tr></thead><tbody id="reportsBody"></tbody></table></div></section>
-<section class="panel admin-panel" id="tab-gifts" hidden><h2 class="section-title">礼物管理</h2><form id="giftForm" class="module-tools"><input class="field" id="giftName" placeholder="礼物名称" maxlength="80" required><input class="field" id="giftPrice" type="number" min="1" step="1" placeholder="金币价格" required><input class="field" id="giftImage" type="url" placeholder="礼物图片 URL（可选）"><button class="btn">添加礼物</button></form><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>礼物</th><th>价格</th><th>状态</th><th>操作</th></tr></thead><tbody id="giftsBody"></tbody></table></div></section>
-<section class="panel admin-panel" id="tab-finance" hidden><h2 class="section-title">充值及礼物订单</h2><p class="admin-note">此处显示服务端确认后的订单。前端不能直接将订单标记为已支付或修改用户余额。</p><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>订单号</th><th>用户</th><th>金额（CNY）</th><th>状态</th><th>创建时间</th></tr></thead><tbody id="ordersBody"></tbody></table></div></section>
-<section class="panel admin-panel" id="tab-settings" hidden><h2 class="section-title">网站设置</h2><form id="settingsForm"><label>网站公告</label><textarea class="field" id="siteAnnouncement" rows="4" maxlength="2000"></textarea><label style="display:block;margin-top:12px">默认个人主页背景 URL</label><input class="field" id="defaultCover" type="url" placeholder="https://..."><button class="btn" style="margin-top:12px">保存设置</button></form><div id="settingsNotice"></div></section>
-<section class="panel admin-panel" id="tab-audit" hidden><h2 class="section-title">管理员操作日志</h2><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>时间</th><th>管理员</th><th>操作</th><th>对象</th><th>详情</th></tr></thead><tbody id="auditBody"></tbody></table></div></section>
-</div></div><script type="module" src="admin.js"></script></body></html>
+ <section class="admin-grid" id="stats" aria-label="平台数据概览"></section>
+ <nav class="admin-nav" aria-label="后台模块">
+  <button class="active" data-tab="users">用户管理</button><button data-tab="posts">动态管理</button>
+  <button data-tab="verifications">蓝 V 审核</button><button data-tab="reports">举报管理</button>
+  <button data-tab="gifts">礼物目录</button><button data-tab="finance">充值订单</button><button data-tab="wallets">钱包概览</button>
+ </nav>
+ <section class="admin-panel" id="tab-users"><h2 class="section-title">用户管理</h2><input class="field admin-search" id="userSearch" placeholder="按用户名搜索"><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>用户</th><th>用户名</th><th>用户 ID</th><th>注册时间</th></tr></thead><tbody id="usersBody"></tbody></table></div></section>
+ <section class="admin-panel" id="tab-posts" hidden><h2 class="section-title">动态管理</h2><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>作者 ID</th><th>内容</th><th>媒体类型</th><th>发布时间</th></tr></thead><tbody id="postsBody"></tbody></table></div></section>
+ <section class="admin-panel" id="tab-verifications" hidden><h2 class="section-title">蓝 V 认证申请</h2><p class="admin-note">此版本先提供安全只读审核列表；审核通过/拒绝操作将在核实服务端权限后开放。</p><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>申请人</th><th>姓名</th><th>申请类型</th><th>说明</th><th>材料</th><th>状态</th><th>提交时间</th></tr></thead><tbody id="verificationBody"></tbody></table></div></section>
+ <section class="admin-panel" id="tab-reports" hidden><h2 class="section-title">举报管理</h2><p class="admin-note">此版本先展示举报记录，不直接修改举报状态。</p><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>举报人</th><th>对象</th><th>原因</th><th>补充说明</th><th>状态</th><th>提交时间</th></tr></thead><tbody id="reportsBody"></tbody></table></div></section>
+ <section class="admin-panel" id="tab-gifts" hidden><h2 class="section-title">礼物目录</h2><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>礼物</th><th>说明</th><th>价格</th><th>状态</th><th>创建时间</th></tr></thead><tbody id="giftsBody"></tbody></table></div></section>
+ <section class="admin-panel" id="tab-finance" hidden><h2 class="section-title">充值订单</h2><p class="admin-note">订单状态以服务端支付回调为准。后台不会直接把订单标记为已支付或修改余额。</p><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>订单号</th><th>用户 ID</th><th>金额</th><th>渠道</th><th>状态</th><th>创建时间</th><th>支付时间</th></tr></thead><tbody id="ordersBody"></tbody></table></div></section>
+ <section class="admin-panel" id="tab-wallets" hidden><h2 class="section-title">钱包概览</h2><p class="admin-note">只读查看余额及交易记录；金币调整需要单独建立带审计的安全服务端操作。</p><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>用户 ID</th><th>余额</th><th>币种</th><th>更新时间</th></tr></thead><tbody id="walletsBody"></tbody></table></div><h3>最近钱包交易</h3><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>交易 ID</th><th>用户 ID</th><th>类型</th><th>金额</th><th>说明</th><th>时间</th></tr></thead><tbody id="walletTxBody"></tbody></table></div></section>
+</div>
+</main>
+<script type="module" src="admin.js"></script>
+</body></html>
