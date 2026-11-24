@@ -1,4 +1,4 @@
-﻿import {supabase,$,initShell,getProfiles,displayName,avatarHTML,esc} from "./shared.js?v=5";
+﻿import {supabase,$,initShell,getProfiles,displayName,avatarHTML,esc} from "./shared.js?v=7";
 const shell=await initShell("videos");
 if(shell){
  let offset=0; const size=12;

@@ -1,4 +1,4 @@
-import {supabase,$,esc,avatarHTML,displayName,shellHeader,getProfiles} from "./shared.js?v=4";
+import {supabase,$,esc,avatarHTML,displayName,shellHeader,getProfiles} from "./shared.js?v=7";
 
 if($("#header")) $("#header").innerHTML=shellHeader();
 const status=$("#adminStatus");
@@ -74,7 +74,40 @@ async function loadWallets(){
  if(tx.error)cellError("walletTxBody",6,tx.error);
  else{$("#walletTxBody").innerHTML=(tx.data||[]).map(t=>`<tr><td><small>${safe(t.id)}</small></td><td><small>${safe(t.user_id)}</small></td><td>${safe(t.type)}</td><td>${safe(t.amount)}</td><td>${safe(t.description)}</td><td>${date(t.created_at)}</td></tr>`).join("");if(!tx.data?.length)empty("walletTxBody",6);}
 }
-const loaders={users:loadUsers,posts:loadPosts,verifications:loadVerifications,reports:loadReports,gifts:loadGifts,finance:loadOrders,wallets:loadWallets};
+async function loadGrowthAnalytics(){
+ const box=$("#growthStatus"),stats=$("#growthStats"),chart=$("#growthChart"),sources=$("#growthSources");
+ box.textContent="正在读取增长数据…";
+ const now=new Date(),today=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate()));
+ const since=new Date(today);since.setUTCDate(since.getUTCDate()-30);
+ const [profilesRes,eventsRes]=await Promise.all([
+  supabase.from("profiles").select("id,created_at").order("created_at",{ascending:false}).limit(10000),
+  supabase.from("eow_activity_events").select("user_id,event_type,created_at,source,campaign").gte("created_at",since.toISOString()).order("created_at",{ascending:false}).limit(30000)
+ ]);
+ if(profilesRes.error){box.textContent="读取注册数据失败："+profilesRes.error.message;box.classList.add("admin-error");return;}
+ if(eventsRes.error){box.textContent="读取活跃数据失败："+eventsRes.error.message+"。请确认增长分析数据库迁移已应用。";box.classList.add("admin-error");return;}
+ const profiles=profilesRes.data||[],events=eventsRes.data||[];
+ const pageViews=events.filter(e=>e.event_type==="page_view");
+ const dayStart=today.getTime(),weekStart=dayStart-7*86400000,monthStart=dayStart-30*86400000;
+ const dau=new Set(pageViews.filter(e=>new Date(e.created_at).getTime()>=dayStart).map(e=>e.user_id)).size;
+ const wau=new Set(pageViews.filter(e=>new Date(e.created_at).getTime()>=weekStart).map(e=>e.user_id)).size;
+ const registrations30=profiles.filter(p=>new Date(p.created_at).getTime()>=monthStart).length;
+ const eligibleD1=profiles.filter(p=>new Date(p.created_at).getTime()<=Date.now()-86400000);
+ const eligibleD7=profiles.filter(p=>new Date(p.created_at).getTime()<=Date.now()-7*86400000);
+ const activeInWindow=(user,from,to)=>pageViews.some(e=>e.user_id===user&&new Date(e.created_at).getTime()>=from&&new Date(e.created_at).getTime()<to);
+ const retainedD1=eligibleD1.filter(p=>{const t=new Date(p.created_at).getTime();return activeInWindow(p.id,t+86400000,t+2*86400000);}).length;
+ const retainedD7=eligibleD7.filter(p=>{const t=new Date(p.created_at).getTime();return activeInWindow(p.id,t+7*86400000,t+8*86400000);}).length;
+ const pct=(a,b)=>b?Math.round(a/b*100)+"%":"样本不足";
+ const cards=[["总注册用户",profiles.length],["近 30 天新增",registrations30],["今日活跃用户",dau],["近 7 天活跃用户",wau],["次日留存率",pct(retainedD1,eligibleD1.length)],["第 7 日留存率",pct(retainedD7,eligibleD7.length)]];
+ stats.innerHTML=cards.map(([label,value])=>'<div class="admin-stat"><span>'+safe(label)+'</span><strong>'+safe(value)+'</strong></div>').join("");
+ const days=[];
+ for(let i=13;i>=0;i--){const d=new Date(today);d.setUTCDate(d.getUTCDate()-i);const start=d.getTime(),end=start+86400000;days.push({date:d,label:(d.getUTCMonth()+1)+"/"+d.getUTCDate(),registrations:profiles.filter(p=>{const t=new Date(p.created_at).getTime();return t>=start&&t<end;}).length,active:new Set(pageViews.filter(e=>{const t=new Date(e.created_at).getTime();return t>=start&&t<end;}).map(e=>e.user_id)).size});}
+ const max=Math.max(1,...days.flatMap(d=>[d.registrations,d.active]));
+ chart.innerHTML='<div class="admin-growth-legend"><span><i class="admin-growth-dot" style="background:#5577e8"></i>新增注册</span><span><i class="admin-growth-dot" style="background:#22b8b5"></i>活跃用户</span></div>'+days.map(d=>'<div class="admin-growth-day"><div class="admin-growth-bars"><i class="admin-growth-bar" title="注册 '+d.registrations+'" style="height:'+Math.max(d.registrations?3:0,d.registrations/max*130)+'px"></i><i class="admin-growth-bar active" title="活跃 '+d.active+'" style="height:'+Math.max(d.active?3:0,d.active/max*130)+'px"></i></div><small>'+d.label+'</small></div>').join("");
+ const sourceCounts={};events.filter(e=>e.event_type==="signup").forEach(e=>{const key=e.source||"direct / 未标记";sourceCounts[key]=(sourceCounts[key]||0)+1;});
+ sources.innerHTML=Object.entries(sourceCounts).sort((a,b)=>b[1]-a[1]).map(([name,count])=>'<tr><td>'+safe(name)+'</td><td>'+count+'</td></tr>').join("")||'<tr><td colspan="2">暂无来源数据；本功能上线后产生的注册会开始记录来源。</td></tr>';
+ box.classList.remove("admin-error");box.textContent="数据已更新 · "+new Date().toLocaleString()+" · 注册来源和活跃记录从功能上线后开始累计。";
+}
+const loaders={users:loadUsers,posts:loadPosts,verifications:loadVerifications,reports:loadReports,gifts:loadGifts,finance:loadOrders,wallets:loadWallets,growth:loadGrowthAnalytics};
 async function showUserDetail(id){
  const modal=$("#userDetailModal"),content=$("#userDetailContent");
  modal.hidden=false;content.textContent="正在读取用户资料…";
@@ -119,5 +152,6 @@ async function start(){
   const loader=loaders[btn.dataset.tab];if(loader)await loader();
  }));
  $("#userSearch").addEventListener("input",loadUsers);
+ $("#refreshGrowth")?.addEventListener("click",loadGrowthAnalytics);
 }
 start().catch(error=>{console.error(error);status.textContent="后台初始化失败："+(error?.message||"未知错误");status.classList.add("admin-error");});

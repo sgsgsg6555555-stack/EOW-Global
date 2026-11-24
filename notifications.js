@@ -1,4 +1,4 @@
-﻿import {supabase,$,initShell,getProfiles,avatarHTML,displayName,esc,setNotice} from "./shared.js?v=5";
+﻿import {supabase,$,initShell,getProfiles,avatarHTML,displayName,esc,setNotice} from "./shared.js?v=7";
 const shell=await initShell("notifications");if(shell){let rows=[],profiles={},filter="all",channel=null;
  async function load(){const {data,error}=await supabase.from("notifications").select("id,recipient_id,actor_id,type,content,is_read,created_at").eq("recipient_id",shell.user.id).order("created_at",{ascending:false}).limit(150);if(error){$("#noticeStatus").textContent="通知读取失败："+error.message;return;}rows=data||[];try{profiles=await getProfiles(rows.map(n=>n.actor_id));}catch(e){console.warn(e);}$("#unreadCount").textContent=rows.filter(n=>!n.is_read).length;render();}
  function target(n){if(n.type==="message")return `messages.html?user=${encodeURIComponent(n.actor_id)}`;if(n.type==="friend_request"||n.type==="friend_accepted"||n.type==="follow")return `profile.html?id=${encodeURIComponent(n.actor_id)}`;return "index.html";}

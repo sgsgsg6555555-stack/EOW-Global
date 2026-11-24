@@ -1,4 +1,4 @@
-import { supabase, $, setNotice } from "./shared.js?v=6";
+import { supabase, $, setNotice, trackActivity } from "./shared.js?v=7";
 
 const form = $("#registerForm");
 let mode = "email";
@@ -54,6 +54,7 @@ form.addEventListener("submit", async event => {
       const { data, error } = await supabase.auth.signUp({ email, password });
       if (error) throw error;
       if (data.session) {
+        await trackActivity("signup");
         showMessage("注册成功，正在进入 EOW…", "success");
         location.replace("feed.html");
       } else {
@@ -105,6 +106,7 @@ $("#verifyButton").addEventListener("click", async () => {
       ? await supabase.auth.verifyOtp({ email: pendingEmail, token, type: "signup" })
       : await supabase.auth.verifyOtp({ phone: pendingPhone, token, type: "sms" });
     if (response.error) throw response.error;
+    await trackActivity("signup");
     showMessage("验证成功，正在进入 EOW…", "success");
     location.replace("feed.html");
   } catch (error) {
