@@ -20,6 +20,7 @@ if (shell) {
   let community = null;
   let members = [];
   let isJoined = false;
+  $("#communityPostForm").querySelectorAll("textarea,button").forEach(el => { el.disabled = true; });
 
   if (!communityId) {
     $("#communityStatus").textContent = "缺少社区编号，请返回社区列表重新进入。";
