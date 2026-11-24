@@ -158,7 +158,9 @@ export async function initCallUI(user, supabase, onIncoming = null) {
     current={id:call.id,peerId:call.caller_id,type:call.call_type,role:"callee"};
     try{
       await subscribeCall(call.id);
-      show(call.call_type==="video"?"视频来电":"语音来电","好友来电 · "+(call.call_type==="video"?"视频通话":"语音通话"));
+      const {data:callerProfile}=await supabase.from("profiles").select("display_name,username").eq("id",call.caller_id).maybeSingle();
+      const callerName=callerProfile?.display_name||callerProfile?.username||"好友";
+      show(callerName+" · "+(call.call_type==="video"?"视频来电":"语音来电"),"好友来电 · "+(call.call_type==="video"?"视频通话":"语音通话"));
       if(onIncoming){const callerName=await onIncoming(call.caller_id);if(callerName)$("#eowCallTitle").textContent=callerName+" · "+(call.call_type==="video"?"视频来电":"语音来电");}
       $("eowAcceptCall").hidden=false;$("eowRejectCall").hidden=false;
       $("eowMuteCall").hidden=true;$("eowCameraCall").hidden=true;$("eowSwitchCamera").hidden=true;$("eowEndCall").hidden=true;
