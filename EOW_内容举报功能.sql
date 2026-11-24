@@ -19,7 +19,7 @@ create unique index if not exists eow_post_reports_unique_reporter_post
 
 alter table public.post_reports enable row level security;
 revoke all on public.post_reports from anon, authenticated;
-grant select, insert on public.post_reports to authenticated;
+grant select, insert, update on public.post_reports to authenticated;
 
 drop policy if exists eow_post_reports_insert_own on public.post_reports;
 create policy eow_post_reports_insert_own
@@ -47,6 +47,12 @@ using (
     where a.user_id = auth.uid() and a.active = true
   )
 );
+
+drop policy if exists eow_post_reports_update_admin on public.post_reports;
+create policy eow_post_reports_update_admin
+on public.post_reports for update to authenticated
+using (exists (select 1 from public.eow_admins a where a.user_id = auth.uid() and a.active = true))
+with check (exists (select 1 from public.eow_admins a where a.user_id = auth.uid() and a.active = true));
 
 commit;
 
