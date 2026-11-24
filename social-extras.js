@@ -36,7 +36,17 @@ export async function initSocialExtras(shell){
  const show=(title,body)=>{modal.querySelector(".eow-modal-content").innerHTML=`<h2>${title}</h2>${body}`;modal.querySelector(".eow-modal-close").setAttribute("aria-label",t("关闭","Close"));modal.hidden=false;};
  const stories=async()=>{
   const {data,error}=await supabase.from("eow_stories").select("*").gt("expires_at",new Date().toISOString()).order("created_at",{ascending:false}).limit(40);
-  const box=$("#activeMembers");if(error){console.warn("Stories unavailable:",error);box.textContent=t("快拍暂时无法加载，正在显示活跃成员…","Stories unavailable; loading active members…");try{await loadActiveMembers();}catch(fallbackError){console.warn(fallbackError);box.textContent=t("活跃成员暂时无法加载","Active members are temporarily unavailable");}return;}
+  const box=$("#activeMembers");if(error){
+   console.warn("Stories unavailable:",error);
+   try{
+    const {data:recentPosts,error:postsError}=await supabase.from("posts").select("user_id").order("created_at",{ascending:false}).limit(40);
+    if(postsError)throw postsError;
+    const activeIds=[...new Set((recentPosts||[]).map(p=>p.user_id).filter(id=>id!==shell.user.id))].slice(0,8);
+    const activeProfiles=await getProfiles(activeIds);
+    box.innerHTML=activeIds.map(id=>{const p=activeProfiles[id];return p?`<a class="eow-story-user" href="profile.html?id=${encodeURIComponent(id)}">${avatarHTML(p,"eow-story-avatar")}<span>${esc(displayName(p))}</span></a>`:"";}).join("")||`<span class="eow-empty">${t("快拍暂不可用，发布动态后这里会展示活跃成员","Stories unavailable; active members appear here as people post")}</span>`;
+   }catch(fallbackError){console.warn("Active member fallback failed:",fallbackError);box.textContent=t("快拍和活跃成员暂时无法加载","Stories and active members are temporarily unavailable");}
+   return;
+  }
   const ids=[...new Set((data||[]).map(x=>x.user_id))],profiles=await getProfiles(ids);
   const mine=(data||[]).filter(x=>x.user_id===shell.user.id);
   box.innerHTML=`<button class="eow-story-create" id="addStory"><span>＋</span><b>${t("发布快拍","Add story")}</b></button>`+(data||[]).map(s=>{const p=profiles[s.user_id];if(!p)return "";return `<button class="eow-story-user" data-story="${esc(s.id)}"><span class="eow-story-ring">${avatarHTML(p,"eow-story-avatar")}</span><span>${esc(displayName(p))}</span></button>`;}).join("")||`<span class="eow-empty">${t("发布 24 小时快拍，与朋友分享此刻","Share a moment that stays for 24 hours")}</span>`;
