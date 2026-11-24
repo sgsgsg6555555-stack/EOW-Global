@@ -1,4 +1,4 @@
-﻿import {supabase,$,initShell,shellHeader,avatarHTML,displayName,getProfiles,postCard,setNotice} from "./shared.js?v=4";
+﻿import {supabase,$,initShell,shellHeader,avatarHTML,displayName,getProfiles,postCard,setNotice} from "./shared.js?v=5";
 const shell=await initShell("home");if(shell){
 $("#composerAvatar").innerHTML=avatarHTML(shell.profile);
 $("#postMedia").addEventListener("change",e=>$("#mediaName").textContent=e.target.files[0]?.name||"支持图片或视频，单个文件最大 30MB");
