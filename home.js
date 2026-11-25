@@ -1,5 +1,5 @@
 ﻿import {supabase,$,initShell,shellHeader,avatarHTML,displayName,getProfiles,postCard,setNotice,trackActivity,esc} from "./shared.js?v=22";
-import {renderPollCard,initSocialExtras} from "./social-extras.js?v=4";
+import {renderPollCard,initSocialExtras} from "./social-extras.js?v=5";
 const t=(zh,en)=>document.documentElement.lang==="en"?en:zh;
 const shell=await initShell("home");if(shell){
 if(!document.querySelector(".eow-mobile-bottom-nav")){
