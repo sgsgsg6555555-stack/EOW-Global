@@ -58,10 +58,23 @@ export async function initSocialExtras(shell){
   const {data:s,error}=await supabase.from("eow_stories").select("*").eq("id",id).maybeSingle();if(error||!s)return;
   show(t("EOW 快拍","EOW Story"),`<div class="eow-story-viewer">${s.media_type==="video"?`<video src="${esc(s.media_url)}" controls autoplay playsinline></video>`:`<img src="${esc(s.media_url)}" alt="Story">`}<p>${esc(s.caption)}</p><small>${relativeTime(s.created_at)}</small></div>`);
  };
- storyInput.addEventListener("change",async()=>{
-  const file=storyInput.files?.[0];if(!file)return;
-  try{const url=await upload(shell.user.id,file,"story");const caption=prompt(t("添加快拍文字（可留空）","Add a story caption (optional)"))||"";const {error}=await supabase.from("eow_stories").insert({user_id:shell.user.id,media_url:url,media_type:file.type.startsWith("video/")?"video":"image",caption:caption.slice(0,500)});if(error)throw error;await stories();}
-  catch(e){alert(t("快拍发布失败：","Story upload failed: ")+e.message);}finally{storyInput.value="";}
+ storyInput.addEventListener("change",()=>{
+  const file=storyInput.files?.[0];storyInput.value="";if(!file)return;
+  const video=file.type.startsWith("video/");
+  const d=document.createElement("dialog");d.style.cssText="width:min(92vw,520px);max-height:90vh;overflow:auto;background:#101e35;color:#e6efff;border:1px solid #304768;border-radius:16px;padding:20px;box-sizing:border-box";
+  const title=document.createElement("h2");title.textContent=t("发布快拍","Publish story");
+  const preview=document.createElement(video?"video":"img");const local=URL.createObjectURL(file);preview.src=local;preview.style.cssText="display:block;width:100%;max-height:45vh;object-fit:contain;border-radius:10px;background:#081225";if(video){preview.controls=true;preview.playsInline=true;}else preview.alt=t("快拍预览","Story preview");
+  const caption=document.createElement("textarea");caption.className="field";caption.rows=3;caption.maxLength=500;caption.placeholder=t("添加文字（可选）","Add a caption (optional)");caption.style.cssText="width:100%;margin-top:12px;box-sizing:border-box";caption.setAttribute("aria-label",caption.placeholder);
+  const status=document.createElement("p");status.setAttribute("role","alert");status.style.color="#ff9da8";status.hidden=true;
+  const actions=document.createElement("div");actions.style.cssText="display:flex;justify-content:flex-end;gap:10px;margin-top:12px";
+  const cancel=document.createElement("button"),publish=document.createElement("button");cancel.type=publish.type="button";cancel.className="btn secondary";publish.className="btn";cancel.textContent=t("取消","Cancel");publish.textContent=t("发布快拍","Publish story");
+  let busy=false;function dismiss(){if(busy)return;d.close();}cancel.onclick=dismiss;d.addEventListener("cancel",e=>{e.preventDefault();dismiss();});d.addEventListener("close",()=>{URL.revokeObjectURL(local);d.remove();},{once:true});
+  publish.onclick=async()=>{if(busy)return;busy=true;publish.disabled=cancel.disabled=caption.disabled=true;status.hidden=true;publish.textContent=t("正在发布…","Publishing…");
+   try{const url=await upload(shell.user.id,file,"story");const {error}=await supabase.from("eow_stories").insert({user_id:shell.user.id,media_url:url,media_type:video?"video":"image",caption:caption.value.trim()});if(error)throw error;}
+   catch(e){status.textContent=t("快拍发布失败：","Story upload failed: ")+e.message;status.hidden=false;busy=false;publish.disabled=cancel.disabled=caption.disabled=false;publish.textContent=t("发布快拍","Publish story");return;}
+   busy=false;dismiss();try{await stories();}catch(e){console.warn("Story refresh failed",e);}
+  };
+  actions.append(cancel,publish);d.append(title,preview,caption,status,actions);document.body.append(d);d.showModal();
  });
  const eventList=async()=>{
   const {data,error}=await supabase.from("eow_events").select("*").gte("starts_at",new Date(Date.now()-86400000).toISOString()).order("starts_at").limit(8);
