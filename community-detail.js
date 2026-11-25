@@ -126,14 +126,40 @@ if (shell) {
       const heading = document.createElement("h2"); heading.textContent = "社区公告"; host.append(heading, p);
       if (community?.owner_id === shell.user.id) {
         const button = document.createElement("button"); button.className = "btn secondary small"; button.textContent = "编辑公告";
-        button.addEventListener("click", async () => {
-          const value = prompt("编辑社区公告（最多 1000 字）", community.announcement || "");
-          if (value === null) return;
-          if (value.length > 1000) { alert("公告不能超过 1000 字"); return; }
-          button.disabled = true;
-          const { data, error } = await supabase.from("communities").update({ announcement: value.trim() }).eq("id", communityId).eq("owner_id", shell.user.id).select("announcement").single();
-          if (error) { alert("保存失败：" + error.message + "。请确认已执行社区管理迁移。"); button.disabled = false; return; }
-          community.announcement = data.announcement; renderAnnouncement();
+        p.style.whiteSpace = "pre-wrap";
+        button.type = "button";
+        button.addEventListener("click", () => {
+          const editor = document.createElement("textarea");
+          editor.className = "field";
+          editor.rows = 5;
+          editor.maxLength = 1000;
+          editor.value = community.announcement || "";
+          editor.placeholder = "输入社区公告…";
+          editor.setAttribute("aria-label", "编辑社区公告");
+          editor.style.cssText = "display:block;width:100%;box-sizing:border-box;resize:vertical;margin:12px 0";
+          const actions = document.createElement("div");
+          actions.style.cssText = "display:flex;gap:8px;align-items:center;flex-wrap:wrap";
+          const save = document.createElement("button"), cancel = document.createElement("button");
+          save.type = cancel.type = "button";
+          save.className = "btn small"; save.textContent = "保存";
+          cancel.className = "btn secondary small"; cancel.textContent = "取消";
+          actions.append(save, cancel);
+          host.replaceChildren(heading, editor, actions);
+          cancel.onclick = renderAnnouncement;
+          save.onclick = async () => {
+            save.disabled = cancel.disabled = editor.disabled = true;
+            try {
+              const { data, error } = await supabase.from("communities").update({ announcement: editor.value.trim() }).eq("id", communityId).eq("owner_id", shell.user.id).select("announcement").single();
+              if (error) throw error;
+              community.announcement = data.announcement;
+              renderAnnouncement();
+            } catch (error) {
+              console.warn("Announcement save failed", error);
+              save.disabled = cancel.disabled = editor.disabled = false;
+              editor.focus();
+            }
+          };
+          editor.focus();
         }); host.append(button);
       }
     }
