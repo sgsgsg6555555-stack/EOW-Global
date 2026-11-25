@@ -139,7 +139,7 @@ if (shell) {
       host.append(controls);
       function button(label, action) { const b=document.createElement("button");b.type="button";b.className="btn secondary small";b.textContent=label;b.onclick=action;controls.append(b);return b; }
       async function change(field,file) {
-        const buttons=controls.querySelectorAll("button");buttons.forEach(b=>b.disabled=true);
+        const buttons=controls.querySelectorAll("button");buttons.forEach(b=>b.disabled=true); controls.querySelectorAll("input").forEach(i=>i.disabled=true); controls.setAttribute("aria-busy","true");
         let path=null, saved=false;
         try {
           if(file && (!["image/jpeg","image/png","image/webp"].includes(file.type)||file.size>5242880)) throw new Error("Unsupported image or size");
@@ -154,12 +154,18 @@ if (shell) {
           saved=true;community[field]=data[field];renderAppearance();
           if(valid(old)) { const prefix=bucket.getPublicUrl("").data.publicUrl; const oldPath=old.slice(prefix.length); if(oldPath.startsWith(communityId+"/"+field+"-")) await bucket.remove([oldPath]); }
         } catch(error) { console.warn("Community appearance save failed",error);if(path&&!saved)await bucket.remove([path]); }
-        finally {buttons.forEach(b=>b.disabled=false);}
+        finally {buttons.forEach(b=>b.disabled=false);controls.querySelectorAll("input").forEach(i=>i.disabled=false);controls.removeAttribute("aria-busy");}
       }
       for(const [field,label] of [["avatar_url","头像"],["cover_url","背景"]]) {
-        const input=document.createElement("input");input.type="file";input.accept="image/jpeg,image/png,image/webp";input.hidden=true;controls.append(input);
+        const input=document.createElement("input");input.type="file";input.accept="image/jpeg,image/png,image/webp";input.id="community-file-"+field; input.setAttribute("aria-label","上传"+label);
         input.onchange=()=>{const file=input.files[0];input.value="";if(file)void change(field,file);};
-        button((community[field]?"更换":"上传")+label,()=>input.click());
+        const picker=document.createElement("label");
+        picker.className="btn secondary small";
+        picker.htmlFor=input.id;
+        picker.style.cssText="position:relative;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer";
+        picker.textContent=(community[field]?"更换":"上传")+label;
+        input.style.cssText="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;display:block!important;z-index:2;margin:0;padding:0";
+        picker.append(input);controls.append(picker);
         if(community[field])button("删除"+label,()=>change(field,null));
       }
       const hint=document.createElement("small");hint.className="muted";hint.textContent="支持 JPG、PNG、WebP，单张不超过 5 MB";host.append(hint);
