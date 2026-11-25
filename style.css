@@ -419,3 +419,17 @@ img,video,iframe{max-width:100%}
  .eow-mobile-bottom-nav a.active{color:#70aaff;font-weight:800}
  .eow-mobile-nav-icon{font-size:19px;line-height:1.1}
 }
+
+/* Shared post controls on light pages (profile, community and other views). */
+body:not(.eow-feed-page) .eow-post-stats{display:flex;align-items:center;flex-wrap:wrap;gap:18px;color:#64748b;font-size:12px;padding:12px 0 10px}
+body:not(.eow-feed-page) .eow-post-stats>span{display:inline-flex;align-items:center;gap:5px}
+body:not(.eow-feed-page) .eow-post-stats b{color:inherit}
+body:not(.eow-feed-page) .eow-post-stats svg{width:14px;height:14px;flex:0 0 14px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linejoin:round}
+body:not(.eow-feed-page) .eow-post-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:0;padding-top:10px}
+body:not(.eow-feed-page) .eow-post-actions .action{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:36px;padding:8px 10px;background:transparent;color:#526581;border:1px solid transparent;border-radius:9px;font-size:13px;line-height:1.2;white-space:nowrap}
+body:not(.eow-feed-page) .eow-post-actions .action-icon{display:block;width:16px;height:16px;flex:0 0 16px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+body:not(.eow-feed-page) .eow-post-actions .heart-icon{fill:currentColor;stroke-width:1}
+body:not(.eow-feed-page) .eow-post-actions .action:hover{background:#edf2fa}
+body:not(.eow-feed-page) .eow-post-actions .liked{color:#db386a;background:#fce8ef}
+body:not(.eow-feed-page) .eow-post-actions .saved{color:#2563eb;background:#e8f0ff}
+@media(max-width:480px){body:not(.eow-feed-page) .eow-post-actions{gap:4px}body:not(.eow-feed-page) .eow-post-actions .action{padding:8px 6px;font-size:12px}}
