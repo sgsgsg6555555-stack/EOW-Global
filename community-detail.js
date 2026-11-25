@@ -51,6 +51,7 @@ if (shell) {
       $("#communityDescription").textContent =
         community.description || "欢迎来到这个社区！";
       renderAnnouncement();
+      renderAppearance();
 
       await Promise.allSettled([loadMembers(), loadPosts()]);
     }
@@ -117,6 +118,53 @@ if (shell) {
       else setNotice($("#communityPostNotice"), "", "");
     }
 
+    function renderAppearance() {
+      const host = document.querySelector("#communityAppearance");
+      host.replaceChildren();
+      const bucket = supabase.storage.from("community-images");
+      const valid = url => typeof url === "string" && url.startsWith(bucket.getPublicUrl(communityId + "/").data.publicUrl);
+      if (valid(community.cover_url)) {
+        const cover = document.createElement("img");
+        cover.src = community.cover_url; cover.alt = "社区背景";
+        cover.style.cssText = "width:100%;height:190px;object-fit:cover;border-radius:16px;display:block;margin:12px 0";
+        host.append(cover);
+      }
+      const avatar = document.createElement("div");
+      avatar.style.cssText = "width:72px;height:72px;border-radius:50%;background:#e8efff;display:grid;place-items:center;font-size:28px;overflow:hidden;margin:16px 0 0";
+      if (valid(community.avatar_url)) { const img=document.createElement("img");img.src=community.avatar_url;img.alt="社区头像";img.style.cssText="width:100%;height:100%;object-fit:cover";avatar.append(img); } else avatar.textContent="◉";
+      host.append(avatar);
+      if (community.owner_id !== shell.user.id) return;
+      const controls=document.createElement("div");
+      controls.style.cssText="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px";
+      host.append(controls);
+      function button(label, action) { const b=document.createElement("button");b.type="button";b.className="btn secondary small";b.textContent=label;b.onclick=action;controls.append(b);return b; }
+      async function change(field,file) {
+        const buttons=controls.querySelectorAll("button");buttons.forEach(b=>b.disabled=true);
+        let path=null, saved=false;
+        try {
+          if(file && (!["image/jpeg","image/png","image/webp"].includes(file.type)||file.size>5242880)) throw new Error("Unsupported image or size");
+          if(file) {
+            path=communityId+"/"+field+"-"+crypto.randomUUID()+"."+({"image/jpeg":"jpg","image/png":"png","image/webp":"webp"}[file.type]);
+            const upload=await bucket.upload(path,file,{contentType:file.type});if(upload.error)throw upload.error;
+          }
+          const url=path?bucket.getPublicUrl(path).data.publicUrl:null;
+          const old=community[field];
+          const {data,error}=await supabase.from("communities").update({[field]:url}).eq("id",communityId).eq("owner_id",shell.user.id).select(field).single();
+          if(error)throw error;
+          saved=true;community[field]=data[field];renderAppearance();
+          if(valid(old)) { const prefix=bucket.getPublicUrl("").data.publicUrl; const oldPath=old.slice(prefix.length); if(oldPath.startsWith(communityId+"/"+field+"-")) await bucket.remove([oldPath]); }
+        } catch(error) { console.warn("Community appearance save failed",error);if(path&&!saved)await bucket.remove([path]); }
+        finally {buttons.forEach(b=>b.disabled=false);}
+      }
+      for(const [field,label] of [["avatar_url","头像"],["cover_url","背景"]]) {
+        const input=document.createElement("input");input.type="file";input.accept="image/jpeg,image/png,image/webp";input.hidden=true;controls.append(input);
+        input.onchange=()=>{const file=input.files[0];input.value="";if(file)void change(field,file);};
+        button((community[field]?"更换":"上传")+label,()=>input.click());
+        if(community[field])button("删除"+label,()=>change(field,null));
+      }
+      const hint=document.createElement("small");hint.className="muted";hint.textContent="支持 JPG、PNG、WebP，单张不超过 5 MB";host.append(hint);
+    }
+
     function renderAnnouncement() {
       const host = $("#communityAnnouncement");
       if (!host) return;
@@ -148,6 +196,7 @@ if (shell) {
           cancel.onclick = renderAnnouncement;
           save.onclick = async () => {
             save.disabled = cancel.disabled = editor.disabled = true;
+            save.textContent = '保存中…';
             try {
               const { data, error } = await supabase.from("communities").update({ announcement: editor.value.trim() }).eq("id", communityId).eq("owner_id", shell.user.id).select("announcement").single();
               if (error) throw error;
@@ -156,6 +205,7 @@ if (shell) {
             } catch (error) {
               console.warn("Announcement save failed", error);
               save.disabled = cancel.disabled = editor.disabled = false;
+              save.textContent = '保存';
               editor.focus();
             }
           };
