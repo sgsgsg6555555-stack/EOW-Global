@@ -12,7 +12,35 @@ if(!document.querySelector(".eow-mobile-bottom-nav")){
  document.body.append(mobileNav);
 }
 $("#composerAvatar").innerHTML=avatarHTML(shell.profile);
-$("#postMedia").addEventListener("change",e=>$("#mediaName").textContent=e.target.files[0]?.name||t("支持图片或视频，单个文件最大 30MB","Images or video · up to 30 MB per file"));
+let editedMedia=null, editingMedia=false;
+const mediaHint=()=>t("支持图片或视频，单个文件最大 30MB","Images or video · up to 30 MB per file");
+const notice=$("#postNotice");
+notice.style.setProperty("display","none","important");
+function postError(message){notice.style.removeProperty("display");setNotice(notice,message,"error");}
+function clearPostNotice(){notice.replaceChildren();notice.style.setProperty("display","none","important");}
+function editPostImage(file){return new Promise((resolve,reject)=>{
+ const url=URL.createObjectURL(file), img=new Image();
+ img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error(t("无法读取图片","Cannot read image")));};
+ img.onload=()=>{
+ const d=document.createElement("dialog");d.style.cssText="width:min(92vw,620px);max-height:90vh;overflow:auto;border:1px solid #526589;border-radius:16px;background:#101e35;color:white;padding:18px;box-sizing:border-box";
+ const heading=document.createElement("h3");heading.textContent=t("调整图片","Adjust image");
+ const canvas=document.createElement("canvas");canvas.width=960;canvas.height=Math.max(320,Math.min(1200,Math.round(960*img.height/img.width)));canvas.style.cssText="display:block;width:100%;max-height:48vh;object-fit:contain;background:#081225;touch-action:none;cursor:grab";
+ const ctx=canvas.getContext("2d");let angle=0,x=0,y=0,drag=null;
+ const zoom=document.createElement("input");zoom.type="range";zoom.min="1";zoom.max="4";zoom.step=".01";zoom.value="1";zoom.style.width="100%";zoom.setAttribute("aria-label",t("缩放","Zoom"));
+ const label=document.createElement("label");label.textContent=t("缩放图片 · 拖动图片调整位置","Zoom · drag to reposition");label.append(zoom);
+ function draw(){const swap=angle%180!==0,w=swap?img.height:img.width,h=swap?img.width:img.height;const scale=Math.max(canvas.width/w,canvas.height/h)*Number(zoom.value);const mx=Math.max(0,(w*scale-canvas.width)/2),my=Math.max(0,(h*scale-canvas.height)/2);x=Math.max(-mx,Math.min(mx,x));y=Math.max(-my,Math.min(my,y));ctx.clearRect(0,0,canvas.width,canvas.height);ctx.save();ctx.translate(canvas.width/2+x,canvas.height/2+y);ctx.rotate(angle*Math.PI/180);ctx.scale(scale,scale);ctx.drawImage(img,-img.width/2,-img.height/2);ctx.restore();}
+ zoom.oninput=draw;canvas.onpointerdown=e=>{drag=[e.clientX,e.clientY];canvas.setPointerCapture(e.pointerId);};canvas.onpointermove=e=>{if(!drag)return;const b=canvas.getBoundingClientRect(),scale=Math.min(b.width/canvas.width,b.height/canvas.height);x+=(e.clientX-drag[0])/scale;y+=(e.clientY-drag[1])/scale;drag=[e.clientX,e.clientY];draw();};canvas.onpointerup=canvas.onpointercancel=()=>drag=null;
+ const actions=document.createElement("div");actions.style.cssText="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px";
+ function button(label,fn){const b=document.createElement("button");b.type="button";b.className="btn";b.textContent=label;b.onclick=fn;actions.append(b);return b;}
+ let done=false;function finish(value){if(done)return;done=true;d.close();d.remove();URL.revokeObjectURL(url);resolve(value);}
+ button(t("旋转90°","Rotate 90°"),()=>{angle=(angle+90)%360;x=y=0;draw();});
+ button(t("重置","Reset"),()=>{angle=x=y=0;zoom.value="1";draw();});
+ button(t("取消","Cancel"),()=>finish(null));
+ const confirm=button(t("确认图片","Confirm image"),()=>{confirm.disabled=true;canvas.toBlob(blob=>{if(!blob){confirm.disabled=false;return;}finish(new File([blob],"edited-"+Date.now()+".png",{type:"image/png"}));},"image/png");});
+ d.addEventListener("cancel",e=>{e.preventDefault();finish(null);});d.append(heading,canvas,label,actions);document.body.append(d);d.showModal();draw();
+ };img.src=url;
+});}
+$("#postMedia").addEventListener("change",async e=>{const input=e.target,file=input.files[0];editedMedia=null;clearPostNotice();if(!file){$("#mediaName").textContent=mediaHint();return;}if(file.size>30*1024*1024){input.value="";$("#mediaName").textContent=mediaHint();postError(t("文件不能超过 30MB。","Files must be 30 MB or smaller."));return;}if(file.type.startsWith("image/")&&file.type!=="image/gif"){editingMedia=true;$("#publishBtn").disabled=true;try{editedMedia=await editPostImage(file);if(!editedMedia)input.value="";}catch(err){input.value="";postError(err.message);}finally{editingMedia=false;$("#publishBtn").disabled=false;}}$("#mediaName").textContent=input.files[0]?.name||mediaHint();});
 let offset=0;const pageSize=10;let latestPosts=[];
 async function loadFeed(reset=false){if(reset){offset=0;$("#feed").innerHTML="";}$("#feedStatus").textContent=t("正在加载动态…","Loading posts…");
 const {data:posts,error}=await supabase.from("posts").select("*").order("created_at",{ascending:false}).range(offset,offset+pageSize-1);
@@ -26,10 +54,10 @@ let commenterProfiles={};try{commenterProfiles=await getProfiles(comments.map(c=
 for(const p of posts){const liked=likes.some(l=>l.post_id===p.id&&l.user_id===shell.user.id);const cs=comments.filter(c=>c.post_id===p.id).map(c=>({...c,profile:profiles[c.user_id]}));$("#feed").insertAdjacentHTML("beforeend",postCard(p,profiles[p.user_id],liked,cs,shell.user.id,{likeCount:likes.filter(l=>l.post_id===p.id).length,commentCount:comments.filter(c=>c.post_id===p.id).length,saved:saved.some(x=>x.post_id===p.id)}));const pollHTML=await renderPollCard(p.id,shell.user.id);if(pollHTML)$("#feed [data-post='"+CSS.escape(p.id)+"']")?.insertAdjacentHTML("beforeend",pollHTML);}
 offset+=posts.length;$("#feedStatus").textContent=t(`已显示 ${offset} 条动态`,`Showing ${offset} posts`);$("#feedCount").textContent=t(`${offset} 条`,`${offset} posts`);$("#loadMore").textContent=t("加载更多","Load more");$("#loadMore").hidden=posts.length<pageSize;if(reset)renderTrending(posts);if(typeof applyLanguage==="function")applyLanguage(localStorage.getItem("eow-language")==="en"?"en":"zh");
 }
-$("#postForm").addEventListener("submit",async e=>{e.preventDefault();const text=$("#postText").value.trim();const file=$("#postMedia").files[0];if(!text&&!file){setNotice($("#postNotice"),t("请填写动态内容或选择图片/视频。","Write something or choose an image/video."),"error");return;}if(file&&file.size>30*1024*1024){setNotice($("#postNotice"),t("文件不能超过 30MB。","Files must be 30 MB or smaller."),"error");return;}
+$("#postForm").addEventListener("submit",async e=>{e.preventDefault();const text=$("#postText").value.trim();if(editingMedia)return;clearPostNotice();const file=editedMedia||$("#postMedia").files[0];if(!text&&!file){postError(t("请填写动态内容或选择图片/视频。","Write something or choose an image/video."));return;}if(file&&file.size>30*1024*1024){postError(t("文件不能超过 30MB。","Files must be 30 MB or smaller."));return;}
 const btn=$("#publishBtn");btn.disabled=true;btn.textContent=t("正在发布…","Publishing…");try{let mediaUrl=null,mediaType=null;if(file){const path=`${shell.user.id}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g,"_")}`;const {error:upErr}=await supabase.storage.from("posts").upload(path,file,{upsert:false,contentType:file.type});if(upErr)throw upErr;mediaUrl=supabase.storage.from("posts").getPublicUrl(path).data.publicUrl;mediaType=file.type.startsWith("video/")?"video":"image";}
-const {error}=await supabase.from("posts").insert({user_id:shell.user.id,content:text,media_url:mediaUrl,media_type:mediaType,created_at:new Date().toISOString()});if(error)throw error;await trackActivity("post_created");$("#postText").value="";$("#postMedia").value="";$("#mediaName").textContent=t("支持图片或视频，单个文件最大 30MB","Images or video · up to 30 MB per file");$("#postNotice").replaceChildren();await loadFeed(true);
-}catch(err){setNotice($("#postNotice"),t("发布失败：","Could not publish: ")+err.message,"error");}finally{btn.disabled=false;btn.textContent=t("发布动态","Publish");}});
+const {error}=await supabase.from("posts").insert({user_id:shell.user.id,content:text,media_url:mediaUrl,media_type:mediaType,created_at:new Date().toISOString()});if(error)throw error;await trackActivity("post_created");$("#postText").value="";$("#postMedia").value="";$("#mediaName").textContent=t("支持图片或视频，单个文件最大 30MB","Images or video · up to 30 MB per file");editedMedia=null;clearPostNotice();await loadFeed(true);
+}catch(err){postError(t("发布失败：","Could not publish: ")+err.message);}finally{btn.disabled=false;btn.textContent=t("发布动态","Publish");}});
 async function handlePostManagement(button, card) {
   const action = button.dataset.action;
   button.disabled = true;
