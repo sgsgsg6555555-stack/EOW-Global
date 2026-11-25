@@ -118,6 +118,49 @@ if (shell) {
       else setNotice($("#communityPostNotice"), "", "");
     }
 
+
+    function cropImage(file, field) {
+      return new Promise((resolve, reject) => {
+        if (!["image/jpeg","image/png","image/webp"].includes(file.type) || file.size > 5242880) { reject(new Error("请选择不超过 5 MB 的 JPG、PNG 或 WebP 图片")); return; }
+        const url = URL.createObjectURL(file), img = new Image();
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("无法读取图片")); };
+        img.onload = () => {
+          const square = field === "avatar_url", w = square ? 512 : 1200, h = square ? 512 : 360;
+          const dialog = document.createElement("dialog");
+          dialog.style.cssText = "width:min(92vw,560px);max-height:90dvh;overflow:auto;box-sizing:border-box;border:1px solid #dce2ef;border-radius:20px;padding:20px;background:var(--panel,#fff);color:inherit";
+          dialog.innerHTML = '<h2 style="margin:0 0 12px">调整图片</h2><p class="muted">拖动图片调整位置，滑动下方控件缩放。</p><canvas aria-label="图片裁剪预览" style="display:block;width:100%;touch-action:none;cursor:grab;background:#e8efff"></canvas><label style="display:flex;align-items:center;gap:12px;margin:16px 0">缩放<input aria-label="缩放图片" type="range" min="1" max="4" step="0.01" value="1" style="flex:1;min-width:0"></label><div style="display:flex;justify-content:flex-end;gap:8px"><button type="button" class="btn secondary small">取消</button><button type="button" class="btn small">确认上传</button></div>';
+          const canvas=dialog.querySelector("canvas"), ctx=canvas.getContext("2d"), slider=dialog.querySelector("input"), [cancel,save]=dialog.querySelectorAll("button");
+          canvas.width=w;canvas.height=h;canvas.style.borderRadius=square?"50%":"12px";
+          let x=0,y=0,zoom=1,drag=null;
+          const base=Math.max(w/img.naturalWidth,h/img.naturalHeight);
+          function draw(){const iw=img.naturalWidth*base*zoom,ih=img.naturalHeight*base*zoom;x=Math.max(-(iw-w)/2,Math.min((iw-w)/2,x));y=Math.max(-(ih-h)/2,Math.min((ih-h)/2,y));ctx.fillStyle="#fff";ctx.fillRect(0,0,w,h);ctx.drawImage(img,(w-iw)/2+x,(h-ih)/2+y,iw,ih);}
+          slider.oninput=()=>{zoom=Number(slider.value);draw();};
+          canvas.onpointerdown=e=>{if(drag)return;drag={id:e.pointerId,x:e.clientX,y:e.clientY};canvas.setPointerCapture(e.pointerId);};
+          canvas.onpointermove=e=>{if(!drag||drag.id!==e.pointerId)return;const ratio=w/canvas.getBoundingClientRect().width;x+=(e.clientX-drag.x)*ratio;y+=(e.clientY-drag.y)*ratio;drag.x=e.clientX;drag.y=e.clientY;draw();};
+          canvas.onpointerup=canvas.onpointercancel=()=>{drag=null;};
+          function finish(value){dialog.close();dialog.remove();URL.revokeObjectURL(url);resolve(value);}
+          cancel.onclick=()=>finish(null);dialog.oncancel=e=>{e.preventDefault();if(!save.disabled)finish(null);};
+          save.onclick=()=>{save.disabled=true;cancel.disabled=true;canvas.toBlob(blob=>{if(!blob){save.disabled=cancel.disabled=false;return;}finish(new File([blob],"community.jpg",{type:"image/jpeg"}));},"image/jpeg",0.92);};
+          document.body.append(dialog);dialog.showModal();draw();
+        };
+        img.src=url;
+      });
+    }
+
+    function editCommunityDetails() {
+      if(community.owner_id!==shell.user.id)return;
+      const host=document.createElement("form");
+      host.style.cssText="display:grid;gap:10px;margin:12px 0";
+      host.innerHTML='<label>社区名称<input class="field" name="name" maxlength="80" required style="display:block;width:100%;box-sizing:border-box"></label><label>社区简介<textarea class="field" name="description" maxlength="300" rows="3" style="display:block;width:100%;box-sizing:border-box"></textarea></label><div style="display:flex;gap:8px"><button class="btn small" type="submit">保存</button><button class="btn secondary small" type="button">取消</button></div><small role="status" class="muted"></small>';
+      const name=host.elements.name,description=host.elements.description,[save,cancel]=host.querySelectorAll("button"),status=host.querySelector("small");
+      name.value=community.name;description.value=community.description||"";
+      const title=$("#communityName"),desc=$("#communityDescription");title.hidden=desc.hidden=true;desc.after(host);
+      function close(){host.remove();title.hidden=desc.hidden=false;renderAppearance();}
+      cancel.onclick=close;
+      host.onsubmit=async e=>{e.preventDefault();if(!name.value.trim()){name.focus();return;}save.disabled=cancel.disabled=name.disabled=description.disabled=true;save.textContent="保存中…";try{const {data,error}=await supabase.from("communities").update({name:name.value.trim(),description:description.value.trim()}).eq("id",communityId).eq("owner_id",shell.user.id).select("name,description").single();if(error)throw error;Object.assign(community,data);title.textContent=data.name;desc.textContent=data.description||"欢迎来到这个社区！";close();}catch(error){console.warn("Community details save failed",error);status.textContent="保存失败，请重试";save.disabled=cancel.disabled=name.disabled=description.disabled=false;save.textContent="保存";}};
+      name.focus();
+    }
+
     function renderAppearance() {
       const host = document.querySelector("#communityAppearance");
       host.replaceChildren();
@@ -138,6 +181,7 @@ if (shell) {
       controls.style.cssText="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px";
       host.append(controls);
       function button(label, action) { const b=document.createElement("button");b.type="button";b.className="btn secondary small";b.textContent=label;b.onclick=action;controls.append(b);return b; }
+      button("编辑社区资料",()=>{if(document.querySelector("#communityName").hidden)return;editCommunityDetails();});
       async function change(field,file) {
         const buttons=controls.querySelectorAll("button");buttons.forEach(b=>b.disabled=true); controls.querySelectorAll("input").forEach(i=>i.disabled=true); controls.setAttribute("aria-busy","true");
         let path=null, saved=false;
@@ -153,12 +197,12 @@ if (shell) {
           if(error)throw error;
           saved=true;community[field]=data[field];renderAppearance();
           if(valid(old)) { const prefix=bucket.getPublicUrl("").data.publicUrl; const oldPath=old.slice(prefix.length); if(oldPath.startsWith(communityId+"/"+field+"-")) await bucket.remove([oldPath]); }
-        } catch(error) { console.warn("Community appearance save failed",error);if(path&&!saved)await bucket.remove([path]); }
+        } catch(error) { console.warn("Community appearance save failed",error);hint.textContent="图片保存失败，请重试";if(path&&!saved)await bucket.remove([path]); }
         finally {buttons.forEach(b=>b.disabled=false);controls.querySelectorAll("input").forEach(i=>i.disabled=false);controls.removeAttribute("aria-busy");}
       }
       for(const [field,label] of [["avatar_url","头像"],["cover_url","背景"]]) {
         const input=document.createElement("input");input.type="file";input.accept="image/jpeg,image/png,image/webp";input.id="community-file-"+field; input.setAttribute("aria-label","上传"+label);
-        input.onchange=()=>{const file=input.files[0];input.value="";if(file)void change(field,file);};
+        input.onchange=async()=>{const file=input.files[0];input.value="";if(!file)return;try{const cropped=await cropImage(file,field);if(cropped)await change(field,cropped);}catch(error){console.warn(error);hint.textContent=error.message;}};
         const picker=document.createElement("label");
         picker.className="btn secondary small";
         picker.htmlFor=input.id;
